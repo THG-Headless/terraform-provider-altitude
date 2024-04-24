@@ -62,3 +62,20 @@ _Note:_ Acceptance tests create real resources, and often cost money to run.
 ```shell
 make testacc
 ```
+
+## Testing The Provider Locally
+
+This is from the documentation found [here](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider#prepare-terraform-for-local-provider-install)
+
+Once the guide has been followed, your `~/.terraformrc` file should look similar to:
+
+```
+provider_installation {
+      dev_overrides {
+              "thg-headless/altitude" = "{{HOME}}/go/bin"
+      }
+      direct {}
+}
+```
+
+Once the file has been created, run `go install .` within the root folder. Go to `examples/provider-verification` and run `terraform plan` which should now succeed.
