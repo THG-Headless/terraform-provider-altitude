@@ -1,8 +1,11 @@
 package provider
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -10,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -77,29 +81,29 @@ type BasicAuthModel struct {
 
 // Post Request Body
 
-type HTTPPostRequestBody struct {
-	Routes    RoutesPostBody
-	BasicAuth BasicAuthPostBody
+type ApiMteConfigRequestBody struct {
+	Routes    []RoutesReqestBody `json:"routes"`
+	BasicAuth BasicAuthRequestBody `json:"basicAuth"`
 }
 
-type BasicAuthPostBody struct {
-	username string
-	password string
+type BasicAuthRequestBody struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
-type RoutesPostBody struct {
-	host               string
-	path               string
-	enableSsl          bool
-	preservePathPrefix bool
-	cacheKey           CacheKeyModel
-	appendPathPrefix   string
-	shieldLocation     ShieldLocation
+type RoutesReqestBody struct {
+	Host               string `json:"host"`
+	Path               string `json:"path"`
+	EnableSsl          bool `json:"enableSsl"`
+	PreservePathPrefix bool `json:"preservePathPrefix"`
+	CacheKey           CacheKeyRequestBody `json:"cacheKey"`
+	AppendPathPrefix   string `json:"appendPathPrefix"`
+	ShieldLocation     ShieldLocation `json:"shieldLocation"`
 }
 
-type CacheKeyRequestBodyModel struct {
-	header string
-	cookie string
+type CacheKeyRequestBody struct {
+	Header []string `json:"header"`
+	Cookie []string `json:"cookie"`
 }
 
 // Metadata implements resource.Resource.
@@ -254,42 +258,88 @@ func (m *MTEConfigResource) createMteConfig(
 	ctx context.Context,
 	data MTEConfigResourceModel,
 ) error {
+	jsonBody, err := json.Marshal(data.transformToApiRequestBody())
+	if err != nil {
+		return err
+	}
 	httpReq, err := http.NewRequest(
 		http.MethodPost,
 		fmt.Sprintf("%s/v1/environment/%s/mte/altitude-config", m.baseUrl, data.EnvironmentId.ValueString()),
-		nil,
+		bytes.NewBuffer([]byte(jsonBody)),
 	)
+
+	if err != nil {
+		return &AltitudeApiError{
+			shortMessage: "Client Error",
+			detail:       fmt.Sprintf("Unable to create http request, received error: %s", err),
+		}
+	}
+
+	bearer := "Bearer " + m.apiKey
+	httpReq.Header.Add("Authorization", bearer)
+
+	httpRes, err := m.client.Do(httpReq)
+
+	if err != nil {
+		return &AltitudeApiError{
+			shortMessage: "HTTP Error",
+			detail:       fmt.Sprintf("There has been an error with the http request, received error: %s", err),
+		}
+	}
+
+	if httpRes.StatusCode == 409 {
+		return &AltitudeApiError{
+			shortMessage: "Environment ID Conflict",
+			detail:       "This environment already has an associated config block.",
+		}
+	}
+
+	if httpRes.StatusCode != 200 {
+		defer httpRes.Body.Close()
+		body, _ := io.ReadAll(httpRes.Body)
+		tflog.Error(ctx, fmt.Sprintf("Body: %s", body))
+		return &AltitudeApiError{
+			shortMessage: "Unexpected API Response",
+			detail:       fmt.Sprintf("The Altitude API Request returned a non-200 response of %s.", httpRes.Status),
+		}
+	}
+	return nil
 }
 
-func (m *MTEConfigResourceModel) transformToHttpPostBody(
-	data MTEConfigResourceModel,
-) HTTPPostRequestBody {
-
-	var httpRoutes = []RoutesPostBody{}
-	for i := 0; i < len(data.Config.Routes); i++ {
-		var r = data.Config.Routes[i]
-		var password = data.Config.BasicAuth.Password
-		var username = data.Config.BasicAuth.Username
-		var basicAuthPostBody = BasicAuthPostBody{
-			username: username.ValueString(),
-			password: password.ValueString(),
+func (m *MTEConfigResourceModel) transformToApiRequestBody() ApiMteConfigRequestBody {
+	var httpRoutes = make([]RoutesReqestBody, len(m.Config.Routes))
+	for i, r := range m.Config.Routes {
+		var cacheKeyHeaders = make([]string, len(r.cacheKey.headers))
+		var cacheKeyCookies = make([]string, len(r.cacheKey.cookies))
+		for i, h := range r.cacheKey.headers {
+			cacheKeyHeaders[i] = h.ValueString()
 		}
-		var routesPostBody = RoutesPostBody{
-			host:               r.host.ValueString(),
-			path:               r.path.ValueString(),
-			enableSsl:          r.enableSsl.ValueBool(),
-			preservePathPrefix: r.preservePathPrefix.ValueBool(),
-			appendPathPrefix:   r.appendPathPrefix.ValueString(),
+		for i, h := range r.cacheKey.cookies {
+			cacheKeyCookies[i] = h.ValueString()
 		}
 
-		//this was done quickly not too sure
-
-		var postRequestBody = HTTPPostRequestBody{
-			RoutesPostBody:    routesPostBody,
-			BasicAuthPostBody: basicAuthPostBody,
+		var routesPostBody = RoutesReqestBody{
+			Host:               r.host.ValueString(),
+			Path:               r.path.ValueString(),
+			EnableSsl:          r.enableSsl.ValueBool(),
+			PreservePathPrefix: r.preservePathPrefix.ValueBool(),
+			AppendPathPrefix:   r.appendPathPrefix.ValueString(),
+			CacheKey: CacheKeyRequestBody{
+				Header: cacheKeyHeaders,
+				Cookie: cacheKeyCookies,
+			},
+			ShieldLocation: r.shieldLocation,
 		}
 
-		httpRoutes = append(httpRoutes, routesPostBody)
+		httpRoutes[i] = routesPostBody
+	}
+
+	return ApiMteConfigRequestBody{
+		Routes: httpRoutes,
+		BasicAuth: BasicAuthRequestBody{
+			Username: m.Config.BasicAuth.Username.ValueString(),
+			Password: m.Config.BasicAuth.Password.ValueString(),
+		},
 	}
 
 }
