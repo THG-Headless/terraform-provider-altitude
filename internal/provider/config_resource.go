@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -82,7 +84,7 @@ type BasicAuthModel struct {
 // Post Request Body
 
 type ApiMteConfigRequestBody struct {
-	Routes    []RoutesReqestBody `json:"routes"`
+	Routes    []RoutesReqestBody   `json:"routes"`
 	BasicAuth BasicAuthRequestBody `json:"basicAuth"`
 }
 
@@ -92,13 +94,13 @@ type BasicAuthRequestBody struct {
 }
 
 type RoutesReqestBody struct {
-	Host               string `json:"host"`
-	Path               string `json:"path"`
-	EnableSsl          bool `json:"enableSsl"`
-	PreservePathPrefix bool `json:"preservePathPrefix"`
+	Host               string              `json:"host"`
+	Path               string              `json:"path"`
+	EnableSsl          bool                `json:"enableSsl"`
+	PreservePathPrefix bool                `json:"preservePathPrefix"`
 	CacheKey           CacheKeyRequestBody `json:"cacheKey"`
-	AppendPathPrefix   string `json:"appendPathPrefix"`
-	ShieldLocation     ShieldLocation `json:"shieldLocation"`
+	AppendPathPrefix   string              `json:"appendPathPrefix"`
+	ShieldLocation     ShieldLocation      `json:"shieldLocation"`
 }
 
 type CacheKeyRequestBody struct {
@@ -201,6 +203,9 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 			"environment_id": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "yo",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}
@@ -221,9 +226,10 @@ func (m *MTEConfigResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	err := m.createMteConfig(
+	err := m.updateMteConfig(
 		ctx,
 		data,
+		true,
 	)
 
 	if err != nil {
@@ -236,7 +242,6 @@ func (m *MTEConfigResource) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-
 }
 
 // Delete implements resource.Resource.
@@ -250,20 +255,50 @@ func (m *MTEConfigResource) Read(context.Context, resource.ReadRequest, *resourc
 }
 
 // Update implements resource.Resource.
-func (m *MTEConfigResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
-	panic("unimplemented")
+func (m *MTEConfigResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan MTEConfigResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := m.updateMteConfig(
+		ctx,
+		plan,
+		false,
+	)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to create MTE config",
+			"An error occurred while executing the creation. "+
+				"If unexpected, please report this issue to the provider developers.\n\n"+
+				"JSON Error: "+err.Error())
+		return
+	}
+	
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (m *MTEConfigResource) createMteConfig(
+func (m *MTEConfigResource) updateMteConfig(
 	ctx context.Context,
 	data MTEConfigResourceModel,
+	isCreate bool,
 ) error {
 	jsonBody, err := json.Marshal(data.transformToApiRequestBody())
 	if err != nil {
 		return err
 	}
+	var httpMethod string
+	if isCreate {
+		httpMethod = http.MethodPost
+	} else {
+		httpMethod = http.MethodPut
+	}
 	httpReq, err := http.NewRequest(
-		http.MethodPost,
+		httpMethod,
 		fmt.Sprintf("%s/v1/environment/%s/mte/altitude-config", m.baseUrl, data.EnvironmentId.ValueString()),
 		bytes.NewBuffer([]byte(jsonBody)),
 	)
@@ -274,6 +309,8 @@ func (m *MTEConfigResource) createMteConfig(
 			detail:       fmt.Sprintf("Unable to create http request, received error: %s", err),
 		}
 	}
+
+	AddAuthenticationToRequest(httpReq, m.apiKey);
 
 	bearer := "Bearer " + m.apiKey
 	httpReq.Header.Add("Authorization", bearer)
@@ -343,7 +380,3 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() ApiMteConfigRequest
 	}
 
 }
-
-//http request = postrequestbody + basic auth
-
-//transform mte config resource model into http body
