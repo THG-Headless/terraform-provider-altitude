@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -33,23 +34,23 @@ type MTEConfigResource struct {
 }
 
 type MTEResourceModel struct {
-	EnvironmentId types.String       `tfsdk:"environment_id"`
+	EnvironmentId types.String   `tfsdk:"environment_id"`
 	Config        MTEConfigModel `tfsdk:"config"`
 }
 
 type MTEConfigModel struct {
-	Routes    []RouteModel   `tfsdk:"routes"`
-	BasicAuth BasicAuthModel `tfsdk:"basic_auth"`
+	Routes    []RouteModel    `tfsdk:"routes"`
+	BasicAuth *BasicAuthModel `tfsdk:"basic_auth"`
 }
 
 type RouteModel struct {
-	host               types.String   `tfsdk:"host"`
-	path               types.String   `tfsdk:"path"`
-	enableSsl          types.Bool     `tfsdk:"enable_ssl"`
-	preservePathPrefix types.Bool     `tfsdk:"preserve_path_prefix"`
-	cacheKey           CacheKeyModel  `tfsdk:"cache_key"`
-	appendPathPrefix   types.String   `tfsdk:"append_path_prefix"`
-	shieldLocation     ShieldLocation `tfsdk:"shield_location"`
+	Host               types.String    `tfsdk:"host"`
+	Path               types.String    `tfsdk:"path"`
+	EnableSsl          types.Bool      `tfsdk:"enable_ssl"`
+	PreservePathPrefix types.Bool      `tfsdk:"preserve_path_prefix"`
+	CacheKey           *CacheKeyModel  `tfsdk:"cache_key"`
+	AppendPathPrefix   types.String    `tfsdk:"append_path_prefix"`
+	ShieldLocation     *ShieldLocation `tfsdk:"shield_location"`
 }
 
 type ShieldLocation string
@@ -72,8 +73,8 @@ const (
 )
 
 type CacheKeyModel struct {
-	headers []types.String `tfsdk:"headers"`
-	cookies []types.String `tfsdk:"cookies"`
+	Headers []types.String `tfsdk:"headers"`
+	Cookies []types.String `tfsdk:"cookies"`
 }
 
 type BasicAuthModel struct {
@@ -84,7 +85,7 @@ type BasicAuthModel struct {
 // Post Request Body
 
 type MTEConfigDto struct {
-	Routes    []RoutesDto   `json:"routes"`
+	Routes    []RoutesDto  `json:"routes"`
 	BasicAuth BasicAuthDto `json:"basicAuth"`
 }
 
@@ -94,13 +95,13 @@ type BasicAuthDto struct {
 }
 
 type RoutesDto struct {
-	Host               string              `json:"host"`
-	Path               string              `json:"path"`
-	EnableSsl          bool                `json:"enableSsl"`
-	PreservePathPrefix bool                `json:"preservePathPrefix"`
-	CacheKey           CacheKeyDto `json:"cacheKey"`
-	AppendPathPrefix   string              `json:"appendPathPrefix"`
-	ShieldLocation     ShieldLocation      `json:"shieldLocation"`
+	Host               string         `json:"host"`
+	Path               string         `json:"path"`
+	EnableSsl          bool           `json:"enableSsl"`
+	PreservePathPrefix bool           `json:"preservePathPrefix"`
+	CacheKey           CacheKeyDto    `json:"cacheKey"`
+	AppendPathPrefix   string         `json:"appendPathPrefix"`
+	ShieldLocation     ShieldLocation `json:"shieldLocation"`
 }
 
 type CacheKeyDto struct {
@@ -111,6 +112,25 @@ type CacheKeyDto struct {
 // Metadata implements resource.Resource.
 func (m *MTEConfigResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_mte_config"
+}
+
+func (m *MTEConfigResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+	resourceData, ok := req.ProviderData.(*ConfiguredData)
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected *ConfiguredData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+		return
+	}
+
+	m.client = resourceData.client
+	m.baseUrl = resourceData.baseUrl
+	m.apiKey = resourceData.apiKey
 }
 
 // Schema implements resource.Resource.
@@ -212,8 +232,8 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 }
 
 // ImportState implements resource.ResourceWithImportState.
-func (m *MTEConfigResource) ImportState(context.Context, resource.ImportStateRequest, *resource.ImportStateResponse) {
-	panic("unimplemented")
+func (m *MTEConfigResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Create implements resource.Resource.
@@ -316,7 +336,6 @@ func (m *MTEConfigResource) Update(ctx context.Context, req resource.UpdateReque
 				"JSON Error: "+err.Error())
 		return
 	}
-	
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -477,26 +496,29 @@ func (m *MTEConfigResource) createMteRequest(
 func (m *MTEResourceModel) transformToApiRequestBody() MTEConfigDto {
 	var httpRoutes = make([]RoutesDto, len(m.Config.Routes))
 	for i, r := range m.Config.Routes {
-		var cacheKeyHeaders = make([]string, len(r.cacheKey.headers))
-		var cacheKeyCookies = make([]string, len(r.cacheKey.cookies))
-		for i, h := range r.cacheKey.headers {
-			cacheKeyHeaders[i] = h.ValueString()
-		}
-		for i, c := range r.cacheKey.cookies {
-			cacheKeyCookies[i] = c.ValueString()
-		}
 
 		var routesPostBody = RoutesDto{
-			Host:               r.host.ValueString(),
-			Path:               r.path.ValueString(),
-			EnableSsl:          r.enableSsl.ValueBool(),
-			PreservePathPrefix: r.preservePathPrefix.ValueBool(),
-			AppendPathPrefix:   r.appendPathPrefix.ValueString(),
-			CacheKey: CacheKeyDto{
+			Host:               r.Host.ValueString(),
+			Path:               r.Path.ValueString(),
+			EnableSsl:          r.EnableSsl.ValueBool(),
+			PreservePathPrefix: r.PreservePathPrefix.ValueBool(),
+			AppendPathPrefix:   r.AppendPathPrefix.ValueString(),
+			ShieldLocation:     *r.ShieldLocation,
+		}
+
+		if r.CacheKey != nil {
+			var cacheKeyHeaders = make([]string, len(r.CacheKey.Headers))
+			var cacheKeyCookies = make([]string, len(r.CacheKey.Cookies))
+			for i, h := range r.CacheKey.Headers {
+				cacheKeyHeaders[i] = h.ValueString()
+			}
+			for i, c := range r.CacheKey.Cookies {
+				cacheKeyCookies[i] = c.ValueString()
+			}
+			routesPostBody.CacheKey = CacheKeyDto{
 				Header: cacheKeyHeaders,
 				Cookie: cacheKeyCookies,
-			},
-			ShieldLocation: r.shieldLocation,
+			}
 		}
 
 		httpRoutes[i] = routesPostBody
@@ -524,16 +546,16 @@ func (d *MTEConfigDto) transformToResourceModel() MTEConfigModel {
 		}
 
 		var routesPostBody = RouteModel{
-			host:               types.StringValue(r.Host),
-			path:               types.StringValue(r.Path),
-			enableSsl:          types.BoolValue(r.EnableSsl),
-			preservePathPrefix: types.BoolValue(r.PreservePathPrefix),
-			appendPathPrefix:   types.StringValue(r.AppendPathPrefix),
-			cacheKey: CacheKeyModel{
-				headers: cacheKeyHeaders,
-				cookies: cacheKeyCookies,
+			Host:               types.StringValue(r.Host),
+			Path:               types.StringValue(r.Path),
+			EnableSsl:          types.BoolValue(r.EnableSsl),
+			PreservePathPrefix: types.BoolValue(r.PreservePathPrefix),
+			AppendPathPrefix:   types.StringValue(r.AppendPathPrefix),
+			CacheKey: &CacheKeyModel{
+				Headers: cacheKeyHeaders,
+				Cookies: cacheKeyCookies,
 			},
-			shieldLocation: r.ShieldLocation,
+			ShieldLocation: &r.ShieldLocation,
 		}
 
 		routeModels[i] = routesPostBody
@@ -541,7 +563,7 @@ func (d *MTEConfigDto) transformToResourceModel() MTEConfigModel {
 
 	return MTEConfigModel{
 		Routes: routeModels,
-		BasicAuth: BasicAuthModel{
+		BasicAuth: &BasicAuthModel{
 			Username: types.StringValue(d.BasicAuth.Username),
 			Password: types.StringValue(d.BasicAuth.Password),
 		},
