@@ -32,12 +32,12 @@ type MTEConfigResource struct {
 	apiKey  string
 }
 
-type MTEConfigResourceModel struct {
+type MTEResourceModel struct {
 	EnvironmentId types.String       `tfsdk:"environment_id"`
-	Config        MTEConfigBodyModel `tfsdk:"config"`
+	Config        MTEConfigModel `tfsdk:"config"`
 }
 
-type MTEConfigBodyModel struct {
+type MTEConfigModel struct {
 	Routes    []RouteModel   `tfsdk:"routes"`
 	BasicAuth BasicAuthModel `tfsdk:"basic_auth"`
 }
@@ -83,27 +83,27 @@ type BasicAuthModel struct {
 
 // Post Request Body
 
-type ApiMteConfigRequestBody struct {
-	Routes    []RoutesReqestBody   `json:"routes"`
-	BasicAuth BasicAuthRequestBody `json:"basicAuth"`
+type MTEConfigDto struct {
+	Routes    []RoutesDto   `json:"routes"`
+	BasicAuth BasicAuthDto `json:"basicAuth"`
 }
 
-type BasicAuthRequestBody struct {
+type BasicAuthDto struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
-type RoutesReqestBody struct {
+type RoutesDto struct {
 	Host               string              `json:"host"`
 	Path               string              `json:"path"`
 	EnableSsl          bool                `json:"enableSsl"`
 	PreservePathPrefix bool                `json:"preservePathPrefix"`
-	CacheKey           CacheKeyRequestBody `json:"cacheKey"`
+	CacheKey           CacheKeyDto `json:"cacheKey"`
 	AppendPathPrefix   string              `json:"appendPathPrefix"`
 	ShieldLocation     ShieldLocation      `json:"shieldLocation"`
 }
 
-type CacheKeyRequestBody struct {
+type CacheKeyDto struct {
 	Header []string `json:"header"`
 	Cookie []string `json:"cookie"`
 }
@@ -218,7 +218,7 @@ func (m *MTEConfigResource) ImportState(context.Context, resource.ImportStateReq
 
 // Create implements resource.Resource.
 func (m *MTEConfigResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data MTEConfigResourceModel
+	var data MTEResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
@@ -245,18 +245,56 @@ func (m *MTEConfigResource) Create(ctx context.Context, req resource.CreateReque
 }
 
 // Delete implements resource.Resource.
-func (m *MTEConfigResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
-	panic("unimplemented")
+func (m *MTEConfigResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data MTEResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := m.deleteMteConfig(
+		ctx,
+		data.EnvironmentId.ValueString(),
+	)
+
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to Delete Resource",
+			"An unexpected error occurred while executing the request. "+
+				"Please report this issue to the provider developers.\n\n"+
+				"JSON Error: "+err.Error(),
+		)
+		return
+	}
 }
 
 // Read implements resource.Resource.
-func (m *MTEConfigResource) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {
-	panic("unimplemented")
+func (m *MTEConfigResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data MTEResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+
+	apiDto, err := m.getMteConfig(
+		ctx,
+		data.EnvironmentId.ValueString(),
+	)
+
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to get MTE Config", err.Error())
+		return
+	}
+
+	configModel := apiDto.transformToResourceModel()
+	data.Config = configModel
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
 // Update implements resource.Resource.
 func (m *MTEConfigResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan MTEConfigResourceModel
+	var plan MTEResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
@@ -284,7 +322,7 @@ func (m *MTEConfigResource) Update(ctx context.Context, req resource.UpdateReque
 
 func (m *MTEConfigResource) updateMteConfig(
 	ctx context.Context,
-	data MTEConfigResourceModel,
+	data MTEResourceModel,
 	isCreate bool,
 ) error {
 	jsonBody, err := json.Marshal(data.transformToApiRequestBody())
@@ -297,25 +335,11 @@ func (m *MTEConfigResource) updateMteConfig(
 	} else {
 		httpMethod = http.MethodPut
 	}
-	httpReq, err := http.NewRequest(
+
+	httpRes, err := m.createMteRequest(
 		httpMethod,
-		fmt.Sprintf("%s/v1/environment/%s/mte/altitude-config", m.baseUrl, data.EnvironmentId.ValueString()),
-		bytes.NewBuffer([]byte(jsonBody)),
-	)
-
-	if err != nil {
-		return &AltitudeApiError{
-			shortMessage: "Client Error",
-			detail:       fmt.Sprintf("Unable to create http request, received error: %s", err),
-		}
-	}
-
-	AddAuthenticationToRequest(httpReq, m.apiKey);
-
-	bearer := "Bearer " + m.apiKey
-	httpReq.Header.Add("Authorization", bearer)
-
-	httpRes, err := m.client.Do(httpReq)
+		data.EnvironmentId.ValueString(),
+		bytes.NewBuffer([]byte(jsonBody)))
 
 	if err != nil {
 		return &AltitudeApiError{
@@ -331,7 +355,7 @@ func (m *MTEConfigResource) updateMteConfig(
 		}
 	}
 
-	if httpRes.StatusCode != 200 {
+	if httpRes.StatusCode != 201 {
 		defer httpRes.Body.Close()
 		body, _ := io.ReadAll(httpRes.Body)
 		tflog.Error(ctx, fmt.Sprintf("Body: %s", body))
@@ -343,25 +367,132 @@ func (m *MTEConfigResource) updateMteConfig(
 	return nil
 }
 
-func (m *MTEConfigResourceModel) transformToApiRequestBody() ApiMteConfigRequestBody {
-	var httpRoutes = make([]RoutesReqestBody, len(m.Config.Routes))
+func (m *MTEConfigResource) deleteMteConfig(
+	ctx context.Context,
+	environmentId string,
+) error {
+	httpRes, err := m.createMteRequest(http.MethodDelete, environmentId, nil)
+
+	if err != nil {
+		return &AltitudeApiError{
+			shortMessage: "HTTP Error",
+			detail:       fmt.Sprintf("There has been an error with the http request, received error: %s", err),
+		}
+	}
+
+	if httpRes.StatusCode == 404 {
+		return &AltitudeApiError{
+			shortMessage: "Environment ID not found",
+			detail:       fmt.Sprintf("The Environment %s does not have associated config.", environmentId),
+		}
+	}
+
+	if httpRes.StatusCode != 204 {
+		defer httpRes.Body.Close()
+		body, _ := io.ReadAll(httpRes.Body)
+		tflog.Error(ctx, fmt.Sprintf("Body: %s", body))
+		return &AltitudeApiError{
+			shortMessage: "Unexpected API Response",
+			detail:       fmt.Sprintf("The API deletion Request returned a non-200 response of %s.", httpRes.Status),
+		}
+	}
+
+	return nil
+}
+
+func (m *MTEConfigResource) getMteConfig(
+	ctx context.Context,
+	environmentId string,
+) (*MTEConfigDto, error) {
+	httpRes, err := m.createMteRequest(http.MethodGet, environmentId, nil)
+
+	if err != nil {
+		return nil, &AltitudeApiError{
+			shortMessage: "HTTP Error",
+			detail:       fmt.Sprintf("There has been an error with the http request, received error: %s", err),
+		}
+	}
+
+	if httpRes.StatusCode == 404 {
+		return nil, &AltitudeApiError{
+			shortMessage: "Environment ID not found",
+			detail:       fmt.Sprintf("The Environment %s does not have associated config.", environmentId),
+		}
+	}
+
+	if httpRes.StatusCode != 200 {
+		defer httpRes.Body.Close()
+		body, _ := io.ReadAll(httpRes.Body)
+		tflog.Error(ctx, fmt.Sprintf("Body: %s", body))
+		return nil, &AltitudeApiError{
+			shortMessage: "Unexpected API Response",
+			detail:       fmt.Sprintf("The API deletion Request returned a non-200 response of %s.", httpRes.Status),
+		}
+	}
+
+	defer httpRes.Body.Close()
+	body, err := io.ReadAll(httpRes.Body)
+	if err != nil {
+		return nil, &AltitudeApiError{
+			shortMessage: "Body Read Error",
+			detail:       "Unable to read response body",
+		}
+	}
+
+	var dto MTEConfigDto
+	err = json.Unmarshal(body, &dto)
+
+	if err != nil {
+		tflog.Error(ctx, fmt.Sprintf("JSON Error: %s", err.Error()))
+		return nil, &AltitudeApiError{
+			shortMessage: "Body Read Error",
+			detail:       "Unable to parse JSON body from Altitude response",
+		}
+	}
+
+	return &dto, nil
+}
+
+func (m *MTEConfigResource) createMteRequest(
+	method string,
+	environmentId string,
+	body io.Reader,
+) (*http.Response, error) {
+	httpReq, err := http.NewRequest(
+		method,
+		fmt.Sprintf("%s/v1/environment/%s/mte/altitude-config", m.baseUrl, environmentId),
+		body,
+	)
+	if err != nil {
+		return nil, &AltitudeApiError{
+			shortMessage: "Client Error",
+			detail:       fmt.Sprintf("Unable to create http request, received error: %s", err),
+		}
+	}
+
+	AddAuthenticationToRequest(httpReq, m.apiKey);
+	return m.client.Do(httpReq)
+}
+
+func (m *MTEResourceModel) transformToApiRequestBody() MTEConfigDto {
+	var httpRoutes = make([]RoutesDto, len(m.Config.Routes))
 	for i, r := range m.Config.Routes {
 		var cacheKeyHeaders = make([]string, len(r.cacheKey.headers))
 		var cacheKeyCookies = make([]string, len(r.cacheKey.cookies))
 		for i, h := range r.cacheKey.headers {
 			cacheKeyHeaders[i] = h.ValueString()
 		}
-		for i, h := range r.cacheKey.cookies {
-			cacheKeyCookies[i] = h.ValueString()
+		for i, c := range r.cacheKey.cookies {
+			cacheKeyCookies[i] = c.ValueString()
 		}
 
-		var routesPostBody = RoutesReqestBody{
+		var routesPostBody = RoutesDto{
 			Host:               r.host.ValueString(),
 			Path:               r.path.ValueString(),
 			EnableSsl:          r.enableSsl.ValueBool(),
 			PreservePathPrefix: r.preservePathPrefix.ValueBool(),
 			AppendPathPrefix:   r.appendPathPrefix.ValueString(),
-			CacheKey: CacheKeyRequestBody{
+			CacheKey: CacheKeyDto{
 				Header: cacheKeyHeaders,
 				Cookie: cacheKeyCookies,
 			},
@@ -371,12 +502,48 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() ApiMteConfigRequest
 		httpRoutes[i] = routesPostBody
 	}
 
-	return ApiMteConfigRequestBody{
+	return MTEConfigDto{
 		Routes: httpRoutes,
-		BasicAuth: BasicAuthRequestBody{
+		BasicAuth: BasicAuthDto{
 			Username: m.Config.BasicAuth.Username.ValueString(),
 			Password: m.Config.BasicAuth.Password.ValueString(),
 		},
 	}
+}
 
+func (d *MTEConfigDto) transformToResourceModel() MTEConfigModel {
+	var routeModels = make([]RouteModel, len(d.Routes))
+	for i, r := range d.Routes {
+		var cacheKeyHeaders = make([]types.String, len(r.CacheKey.Header))
+		var cacheKeyCookies = make([]types.String, len(r.CacheKey.Cookie))
+		for i, h := range r.CacheKey.Header {
+			cacheKeyHeaders[i] = types.StringValue(h)
+		}
+		for i, c := range r.CacheKey.Cookie {
+			cacheKeyCookies[i] = types.StringValue(c)
+		}
+
+		var routesPostBody = RouteModel{
+			host:               types.StringValue(r.Host),
+			path:               types.StringValue(r.Path),
+			enableSsl:          types.BoolValue(r.EnableSsl),
+			preservePathPrefix: types.BoolValue(r.PreservePathPrefix),
+			appendPathPrefix:   types.StringValue(r.AppendPathPrefix),
+			cacheKey: CacheKeyModel{
+				headers: cacheKeyHeaders,
+				cookies: cacheKeyCookies,
+			},
+			shieldLocation: r.ShieldLocation,
+		}
+
+		routeModels[i] = routesPostBody
+	}
+
+	return MTEConfigModel{
+		Routes: routeModels,
+		BasicAuth: BasicAuthModel{
+			Username: types.StringValue(d.BasicAuth.Username),
+			Password: types.StringValue(d.BasicAuth.Password),
+		},
+	}
 }
