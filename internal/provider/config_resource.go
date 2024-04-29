@@ -33,7 +33,7 @@ type MTEConfigResource struct {
 	apiKey  string
 }
 
-type MTEResourceModel struct {
+type MTEConfigResourceModel struct {
 	EnvironmentId types.String   `tfsdk:"environment_id"`
 	Config        MTEConfigModel `tfsdk:"config"`
 }
@@ -238,7 +238,7 @@ func (m *MTEConfigResource) ImportState(ctx context.Context, req resource.Import
 
 // Create implements resource.Resource.
 func (m *MTEConfigResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data MTEResourceModel
+	var data MTEConfigResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
@@ -266,7 +266,7 @@ func (m *MTEConfigResource) Create(ctx context.Context, req resource.CreateReque
 
 // Delete implements resource.Resource.
 func (m *MTEConfigResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data MTEResourceModel
+	var data MTEConfigResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 
@@ -292,7 +292,7 @@ func (m *MTEConfigResource) Delete(ctx context.Context, req resource.DeleteReque
 
 // Read implements resource.Resource.
 func (m *MTEConfigResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data MTEResourceModel
+	var data MTEConfigResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 
@@ -314,7 +314,7 @@ func (m *MTEConfigResource) Read(ctx context.Context, req resource.ReadRequest, 
 
 // Update implements resource.Resource.
 func (m *MTEConfigResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan MTEResourceModel
+	var plan MTEConfigResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
@@ -341,7 +341,7 @@ func (m *MTEConfigResource) Update(ctx context.Context, req resource.UpdateReque
 
 func (m *MTEConfigResource) updateMteConfig(
 	ctx context.Context,
-	data MTEResourceModel,
+	data MTEConfigResourceModel,
 	isCreate bool,
 ) error {
 	jsonBody, err := json.Marshal(data.transformToApiRequestBody())
@@ -489,11 +489,11 @@ func (m *MTEConfigResource) createMteRequest(
 		}
 	}
 
-	AddAuthenticationToRequest(httpReq, m.apiKey);
+	AddAuthenticationToRequest(httpReq, m.apiKey)
 	return m.client.Do(httpReq)
 }
 
-func (m *MTEResourceModel) transformToApiRequestBody() MTEConfigDto {
+func (m *MTEConfigResourceModel) transformToApiRequestBody() MTEConfigDto {
 	var httpRoutes = make([]RoutesDto, len(m.Config.Routes))
 	for i, r := range m.Config.Routes {
 
