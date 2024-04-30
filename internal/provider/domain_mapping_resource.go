@@ -1,12 +1,9 @@
 package provider
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+	"terraform-provider-altitude/internal/provider/client"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -14,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -26,20 +22,13 @@ func NewMTEDomainMappingResource() resource.Resource {
 }
 
 type MTEDomainMappingResource struct {
-	client  *http.Client
-	baseUrl string
-	apiKey  string
+	client  *client.Client
 }
 
 type MTEDomainMappingResourceModel struct {
 	EnvironmentId types.String `tfsdk:"environment_id"`
 	Domain        types.String `tfsdk:"domain"`
 	domainMapping types.String
-}
-
-type MTEDomainMappingDto struct {
-	EnvironmentId string `json:"environmentId"`
-	Domain        string `json:"domain"`
 }
 
 // Metadata implements resource.Resource.
@@ -62,8 +51,6 @@ func (m *MTEDomainMappingResource) Configure(ctx context.Context, req resource.C
 	}
 
 	m.client = resourceData.client
-	m.baseUrl = resourceData.baseUrl
-	m.apiKey = resourceData.apiKey
 }
 
 // Schema implements resource.Resource.
@@ -102,10 +89,10 @@ func (m *MTEDomainMappingResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	domainMapping, err := m.updateMTEDomainMapping(
-		ctx,
-		data,
-		true,
+	domainMapping, err := m.client.CreateMteDomainMapping(
+		client.CreateMteDomainMappingInput{
+			Config: data.transformToApiRequestBody(),
+		},
 	)
 
 	if err != nil {
@@ -131,9 +118,10 @@ func (m *MTEDomainMappingResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	err := m.deleteMTEDomainMapping(
-		ctx,
-		data.EnvironmentId.ValueString(),
+	err := m.client.DeleteMteDomainMapping(
+		client.DeleteMteDomainMappingInput{
+			Domain: data.Domain.ValueString(),
+		},
 	)
 
 	if err != nil {
@@ -153,9 +141,10 @@ func (m *MTEDomainMappingResource) Read(ctx context.Context, req resource.ReadRe
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 
-	domainMapping, err := m.getMTEDomainMapping(
-		ctx,
-		data.EnvironmentId.ValueString(),
+	domainMapping, err := m.client.ReadMteDomainMapping(
+		client.ReadMteDomainMappingInput{
+			Domain: data.domainMapping.ValueString(),
+		},
 	)
 
 	if err != nil {
@@ -178,10 +167,10 @@ func (m *MTEDomainMappingResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
-	domainMapping, err := m.updateMTEDomainMapping(
-		ctx,
-		plan,
-		false,
+	domainMapping, err := m.client.UpdateMteDomainMapping(
+		client.UpdateMteDomainMappingInput{
+			Config: plan.transformToApiRequestBody(),
+		},
 	)
 
 	if err != nil {
@@ -197,178 +186,9 @@ func (m *MTEDomainMappingResource) Update(ctx context.Context, req resource.Upda
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (m *MTEDomainMappingResource) updateMTEDomainMapping(
-	ctx context.Context,
-	data MTEDomainMappingResourceModel,
-	isCreate bool,
-) (string, error) {
-	jsonBody, err := json.Marshal(data.transformToApiRequestBody())
-	if err != nil {
-		return "", err
-	}
-	var httpMethod string
-	if isCreate {
-		httpMethod = http.MethodPost
-	} else {
-		httpMethod = http.MethodPut
-	}
 
-	httpReq, err := http.NewRequest(
-		httpMethod,
-		fmt.Sprintf("%s/v1/mte/domain-mapping", m.baseUrl),
-		bytes.NewBuffer([]byte(jsonBody)),
-	)
-	if err != nil {
-		return "", &AltitudeApiError{
-			shortMessage: "Client Error",
-			detail:       fmt.Sprintf("Unable to create http request, received error: %s", err),
-		}
-	}
-
-	AddAuthenticationToRequest(httpReq, m.apiKey)
-	httpRes, err := m.client.Do(httpReq)
-
-	if err != nil {
-		return "", &AltitudeApiError{
-			shortMessage: "HTTP Error",
-			detail:       fmt.Sprintf("There has been an error with the http request, received error: %s", err),
-		}
-	}
-
-	if httpRes.StatusCode == 409 {
-		return "", &AltitudeApiError{
-			shortMessage: "Domain Conflict",
-			detail:       "This domain already has an associated config block.",
-		}
-	}
-
-	if httpRes.StatusCode != 201 {
-		defer httpRes.Body.Close()
-		body, _ := io.ReadAll(httpRes.Body)
-		tflog.Error(ctx, fmt.Sprintf("Body: %s", body))
-		return "", &AltitudeApiError{
-			shortMessage: "Unexpected API Response",
-			detail:       fmt.Sprintf("The Altitude API Request returned a non-200 response of %s.", httpRes.Status),
-		}
-	}
-
-	defer httpRes.Body.Close()
-	body, err := io.ReadAll(httpRes.Body)
-	if err != nil {
-		return "", &AltitudeApiError{
-			shortMessage: "Body Read Error",
-			detail:       "Unable to read response body",
-		}
-	}
-
-	return string(body[:]), nil
-}
-
-func (m *MTEDomainMappingResource) deleteMTEDomainMapping(
-	ctx context.Context,
-	domain string,
-) error {
-
-	httpReq, err := http.NewRequest(
-		http.MethodDelete,
-		fmt.Sprintf("%s/v1/mte/domain-mapping?domain=%s", m.baseUrl, domain),
-		nil,
-	)
-	if err != nil {
-		return &AltitudeApiError{
-			shortMessage: "Client Error",
-			detail:       fmt.Sprintf("Unable to create http request, received error: %s", err),
-		}
-	}
-
-	AddAuthenticationToRequest(httpReq, m.apiKey)
-	httpRes, err := m.client.Do(httpReq)
-
-	if err != nil {
-		return &AltitudeApiError{
-			shortMessage: "HTTP Error",
-			detail:       fmt.Sprintf("There has been an error with the http request, received error: %s", err),
-		}
-	}
-
-	if httpRes.StatusCode == 404 {
-		return &AltitudeApiError{
-			shortMessage: "Environment ID not found",
-			detail:       fmt.Sprintf("The Environment %s does not have associated config.", domain),
-		}
-	}
-
-	if httpRes.StatusCode != 204 {
-		defer httpRes.Body.Close()
-		body, _ := io.ReadAll(httpRes.Body)
-		tflog.Error(ctx, fmt.Sprintf("Body: %s", body))
-		return &AltitudeApiError{
-			shortMessage: "Unexpected API Response",
-			detail:       fmt.Sprintf("The API deletion Request returned a non-200 response of %s.", httpRes.Status),
-		}
-	}
-
-	return nil
-}
-
-func (m *MTEDomainMappingResource) getMTEDomainMapping(
-	ctx context.Context,
-	domain string,
-) (string, error) {
-
-	httpReq, err := http.NewRequest(
-		http.MethodGet,
-		fmt.Sprintf("%s/v1/mte/domain-mapping?domain=%s", m.baseUrl, domain),
-		nil,
-	)
-	if err != nil {
-		return "", &AltitudeApiError{
-			shortMessage: "Client Error",
-			detail:       fmt.Sprintf("Unable to create http request, received error: %s", err),
-		}
-	}
-
-	AddAuthenticationToRequest(httpReq, m.apiKey)
-	httpRes, err := m.client.Do(httpReq)
-
-	if err != nil {
-		return "", &AltitudeApiError{
-			shortMessage: "HTTP Error",
-			detail:       fmt.Sprintf("There has been an error with the http request, received error: %s", err),
-		}
-	}
-
-	if httpRes.StatusCode == 404 {
-		return "", &AltitudeApiError{
-			shortMessage: "Domain not found",
-			detail:       fmt.Sprintf("The Domain %s does not have associated config.", domain),
-		}
-	}
-
-	if httpRes.StatusCode != 200 {
-		defer httpRes.Body.Close()
-		body, _ := io.ReadAll(httpRes.Body)
-		tflog.Error(ctx, fmt.Sprintf("Body: %s", body))
-		return "", &AltitudeApiError{
-			shortMessage: "Unexpected API Response",
-			detail:       fmt.Sprintf("The API deletion Request returned a non-200 response of %s.", httpRes.Status),
-		}
-	}
-
-	defer httpRes.Body.Close()
-	body, err := io.ReadAll(httpRes.Body)
-	if err != nil {
-		return "", &AltitudeApiError{
-			shortMessage: "Body Read Error",
-			detail:       "Unable to read response body",
-		}
-	}
-
-	return string(body[:]), nil
-}
-
-func (m *MTEDomainMappingResourceModel) transformToApiRequestBody() MTEDomainMappingDto {
-	return MTEDomainMappingDto{
+func (m *MTEDomainMappingResourceModel) transformToApiRequestBody() client.MTEDomainMappingDto {
+	return client.MTEDomainMappingDto{
 		EnvironmentId: m.EnvironmentId.ValueString(),
 		Domain:        m.Domain.ValueString(),
 	}

@@ -2,8 +2,8 @@ package provider
 
 import (
 	"context"
-	"net/http"
 	"os"
+	"terraform-provider-altitude/internal/provider/client"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/function"
@@ -21,9 +21,7 @@ type altitudeProvider struct {
 }
 
 type ConfiguredData struct {
-	client  *http.Client
-	baseUrl string
-	apiKey  string
+	client  *client.Client
 }
 
 // ProviderModel describes the provider data model.
@@ -81,16 +79,24 @@ func (p *altitudeProvider) Configure(ctx context.Context, req provider.Configure
 				"the ALTITUDE_API_KEY environment variable or provider "+
 				"configuration block api_token attribute.",
 		)
-	}
-	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client := http.DefaultClient
+	client, err := client.New(
+		baseUrl,
+		"",
+		"",
+		"",
+	)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Incorrect Client Configuration",
+			"While configuring the provider, the Client could not be created " +
+				"successfully. The error returned from the initialisation was: " + err.Error(),
+		)
+	}
 	var downstreamData = ConfiguredData{
 		client:  client,
-		baseUrl: baseUrl,
-		apiKey:  apiToken,
 	}
 	resp.DataSourceData = &downstreamData
 	resp.ResourceData = &downstreamData
