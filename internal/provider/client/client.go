@@ -10,9 +10,9 @@ import (
 )
 
 type Client struct {
-	baseUrl string
+	baseUrl    string
 	httpClient *http.Client
-	token string
+	token      string
 }
 
 func New(
@@ -22,7 +22,7 @@ func New(
 	audience string) (*Client, error) {
 	c, err := new(Client).generateAuthToken(clientId, clientSecret, audience)
 	if err != nil {
-		return nil, &AltitudeClientError {
+		return nil, &AltitudeClientError{
 			"The Altitude Client is unable to generate an auth token",
 			err.Error(),
 		}
@@ -63,16 +63,16 @@ func (c *Client) initiateRequest(
 }
 
 type AuthDto struct {
-	Audience string `json:"audience"`
-	GrantType string `json:"grant_type"`
-	ClientId string `json:"client_id"`
+	Audience     string `json:"audience"`
+	GrantType    string `json:"grant_type"`
+	ClientId     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 }
 
 type AuthResBody struct {
 	AccessToken string `json:"access_token"`
-	TokenType string `json:"token_type"`
-	ExpiresIn int `json:"expires_in"`
+	TokenType   string `json:"token_type"`
+	ExpiresIn   int    `json:"expires_in"`
 }
 
 func (c *Client) generateAuthToken(
@@ -81,10 +81,10 @@ func (c *Client) generateAuthToken(
 	audience string,
 ) (*Client, error) {
 	authDto := AuthDto{
-		Audience: audience,
-		ClientId: clientId,
+		Audience:     audience,
+		ClientId:     clientId,
 		ClientSecret: clientSecret,
-		GrantType: "client_credentials",
+		GrantType:    "client_credentials",
 	}
 
 	reqBody, err := json.Marshal(authDto)
@@ -95,7 +95,7 @@ func (c *Client) generateAuthToken(
 	resp, err := c.httpClient.Post(
 		fmt.Sprintf("https://%s/oauth/token", "thgaltitude.eu.auth0.com"),
 		"application/json",
-		bytes.NewBuffer([]byte(reqBody)),
+		bytes.NewBuffer(reqBody),
 	)
 	if err != nil {
 		return nil, err

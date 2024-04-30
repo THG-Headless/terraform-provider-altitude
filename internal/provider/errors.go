@@ -19,5 +19,3 @@ type AltitudeApiError struct {
 func (e *AltitudeApiError) Error() string {
 	return fmt.Sprintf("%s\n%s", e.shortMessage, e.detail)
 }
-
-type InternalServerError struct {}

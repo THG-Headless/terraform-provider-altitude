@@ -135,7 +135,7 @@ func (p *altitudeProvider) Configure(ctx context.Context, req provider.Configure
 	} else {
 		resp.Diagnostics.AddWarning(
 			"Using Default Base URL",
-			"The default base URL of "+baseUrl+" is being used. Please set the base_url configuration value if you do not want to use this defualt.",
+			"The default base URL of "+baseUrl+" is being used. Please set the base_url configuration value if you do not want to use this default.",
 		)
 
 	}

@@ -26,7 +26,7 @@ func (c *Client) UpdateMteDomainMapping(
 	httpRes, err := c.initiateRequest(
 		http.MethodPut,
 		"/v1/mte/domain-mapping",
-		bytes.NewBuffer([]byte(jsonBody)))
+		bytes.NewBuffer(jsonBody))
 
 	if err != nil {
 		return "", &AltitudeClientError{

@@ -22,7 +22,7 @@ func NewMTEDomainMappingResource() resource.Resource {
 }
 
 type MTEDomainMappingResource struct {
-	client  *client.Client
+	client *client.Client
 }
 
 type MTEDomainMappingResourceModel struct {
@@ -185,7 +185,6 @@ func (m *MTEDomainMappingResource) Update(ctx context.Context, req resource.Upda
 	plan.domainMapping = types.StringValue(domainMapping)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
-
 
 func (m *MTEDomainMappingResourceModel) transformToApiRequestBody() client.MTEDomainMappingDto {
 	return client.MTEDomainMappingDto{
