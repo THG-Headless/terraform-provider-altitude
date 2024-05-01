@@ -20,7 +20,9 @@ func New(
 	clientId string,
 	clientSecret string,
 	audience string) (*Client, error) {
-	c, err := new(Client).generateAuthToken(clientId, clientSecret, audience)
+	c := new(Client)
+	c.httpClient = http.DefaultClient
+	err := c.generateAuthToken(clientId, clientSecret, audience)
 	if err != nil {
 		return nil, &AltitudeClientError{
 			"The Altitude Client is unable to generate an auth token",
@@ -79,7 +81,7 @@ func (c *Client) generateAuthToken(
 	clientId string,
 	clientSecret string,
 	audience string,
-) (*Client, error) {
+) error {
 	authDto := AuthDto{
 		Audience:     audience,
 		ClientId:     clientId,
@@ -89,7 +91,14 @@ func (c *Client) generateAuthToken(
 
 	reqBody, err := json.Marshal(authDto)
 	if err != nil {
-		return nil, err
+		return err
+	}
+
+	if c.httpClient == nil {
+		return &AltitudeClientError{
+			shortMessage: "Unexpected API Response",
+			detail:       "Default HTTP Client is undefined",
+		}
 	}
 
 	resp, err := c.httpClient.Post(
@@ -98,13 +107,13 @@ func (c *Client) generateAuthToken(
 		bytes.NewBuffer(reqBody),
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if resp.StatusCode != 200 {
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
-		return nil, &AltitudeClientError{
+		return &AltitudeClientError{
 			shortMessage: "Unexpected API Response",
 			detail:       fmt.Sprintf("The Altitude API Request returned a non-200 response of %s with body %s.", resp.Status, body),
 		}
@@ -113,15 +122,15 @@ func (c *Client) generateAuthToken(
 	defer resp.Body.Close()
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var body AuthResBody
 	err = json.Unmarshal(respBody, &body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	c.token = body.AccessToken
-	return c, nil
+	return nil
 }

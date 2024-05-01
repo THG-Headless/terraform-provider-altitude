@@ -7,7 +7,9 @@ terraform {
 }
 
 provider "altitude" {
-  api_key = "{{APIKEY}}"
+  client_id = "{{CLIENT ID}}"
+  client_secret = "{{CLIENT SECRET}}"
+  audience = "{{AUDIENCE}}"
 }
 
 resource "altitude_mte_config" "item_1" {

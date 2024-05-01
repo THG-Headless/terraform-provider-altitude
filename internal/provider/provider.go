@@ -180,7 +180,7 @@ func (p *altitudeProvider) Configure(ctx context.Context, req provider.Configure
 		resp.Diagnostics.AddError(
 			"Incorrect Client Configuration",
 			"While configuring the provider, the Client could not be created "+
-				"successfully. The error returned from the initialisation was: "+err.Error(),
+				"successfully. The error returned from the initialisation was:\n"+err.Error(),
 		)
 	}
 	var downstreamData = ConfiguredData{
