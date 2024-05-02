@@ -14,7 +14,9 @@ description: |-
 
 ```terraform
 provider "altitude" {
-  api_key = ""
+  client_id     = "{{CLIENT ID}}"
+  client_secret = "{{CLIENT SECRET}}"
+  mode          = "Local/UAT/Production"
 }
 ```
 
@@ -23,5 +25,6 @@ provider "altitude" {
 
 ### Optional
 
-- `api_key` (String, Sensitive) Altitude API Key
-- `base_url` (String) Altitude API URL
+- `client_id` (String, Sensitive) The unique identifier for the Auth0 Application.
+- `client_secret` (String, Sensitive) The client secret for the Auth0 Application. Used to sign and validate the Client ID specified.
+- `mode` (String) The environment selected for development which in turn sets the base URL if not specified. This value can be either `Production`, `UAT` or `Local`. It defaults to Local.

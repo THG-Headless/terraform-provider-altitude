@@ -5,12 +5,14 @@ import (
 	"os"
 	"terraform-provider-altitude/internal/provider/client"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/function"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -30,7 +32,7 @@ type ProviderModel struct {
 	BaseUrl      types.String `tfsdk:"base_url"`
 	ClientId     types.String `tfsdk:"client_id"`
 	ClientSecret types.String `tfsdk:"client_secret"`
-	Audience     types.String `tfsdk:"audience"`
+	Mode         types.String `tfsdk:"mode"`
 }
 
 func (p *altitudeProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -41,10 +43,6 @@ func (p *altitudeProvider) Metadata(ctx context.Context, req provider.MetadataRe
 func (p *altitudeProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"base_url": schema.StringAttribute{
-				MarkdownDescription: "Altitude API URL. Defaults to `https://api.platform.thgaltitude.com`.",
-				Optional:            true,
-			},
 			"client_id": schema.StringAttribute{
 				Description: "The unique identifier for the Auth0 Application.",
 				Optional:    true,
@@ -55,9 +53,16 @@ func (p *altitudeProvider) Schema(ctx context.Context, req provider.SchemaReques
 				Optional:    true,
 				Sensitive:   true,
 			},
-			"audience": schema.StringAttribute{
-				Description: "The Audience for an issued token, usually varies between test and prod environments.",
+			"mode": schema.StringAttribute{
+				MarkdownDescription: "The environment selected for development which in turn sets the base URL if not specified. This value can be either `Production`, `UAT` or `Local`. It defaults to Local.",
 				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOf([]string{string(client.Production),
+						string(client.UAT),
+						string(client.Local),
+					}...,
+					),
+				},
 			},
 		},
 	}
@@ -76,8 +81,8 @@ func (p *altitudeProvider) Configure(ctx context.Context, req provider.Configure
 	if config.BaseUrl.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("base_url"),
-			"Unknown HashiCups API Host",
-			"The provider cannot create the HashiCups API client as there is an unknown configuration value for the HashiCups API host. "+
+			"Unknown Altitude API Base URL",
+			"The provider cannot create the Altitude API client as there is an unknown configuration value for the Altitude API base URL. "+
 				"Either target apply the source of the value first, set the value statically in the configuration, or use the default variable.",
 		)
 	}
@@ -85,8 +90,8 @@ func (p *altitudeProvider) Configure(ctx context.Context, req provider.Configure
 	if config.ClientId.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("client_id"),
-			"Unknown HashiCups API Username",
-			"The provider cannot create the HashiCups API client as there is an unknown configuration value for the HashiCups API username. "+
+			"Unknown Altitude API Client ID",
+			"The provider cannot create the Altitude API client as there is an unknown configuration value for the Altitude API client ID. "+
 				"Either target apply the source of the value first, set the value statically in the configuration, or use the ALTITUDE_CLIENT_ID environment variable.",
 		)
 	}
@@ -94,18 +99,18 @@ func (p *altitudeProvider) Configure(ctx context.Context, req provider.Configure
 	if config.ClientSecret.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("client_secret"),
-			"Unknown HashiCups API Password",
-			"The provider cannot create the HashiCups API client as there is an unknown configuration value for the HashiCups API password. "+
+			"Unknown Altitude API Client Secret",
+			"The provider cannot create the Altitude API client as there is an unknown configuration value for the Altitude API client secret. "+
 				"Either target apply the source of the value first, set the value statically in the configuration, or use the ALTITUDE_CLIENT_SECRET environment variable.",
 		)
 	}
 
-	if config.Audience.IsUnknown() {
+	if config.Mode.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("audience"),
-			"Unknown HashiCups API Audience",
-			"The provider cannot create the HashiCups API client as there is an unknown configuration value for the HashiCups API audience. "+
-				"Either target apply the source of the value first, set the value statically in the configuration, or use the ALTIUDE_AUDIENCE environment variable.",
+			path.Root("mode"),
+			"Unknown Altitude API Mode",
+			"The provider cannot create the Altitude API client as there is an unknown configuration value for the Altitude API mode. "+
+				"Either target apply the source of the value first or set the value statically in the configuration.",
 		)
 	}
 
@@ -115,11 +120,10 @@ func (p *altitudeProvider) Configure(ctx context.Context, req provider.Configure
 
 	clientId := os.Getenv("ALTITUDE_CLIENT_ID")
 	clientSecret := os.Getenv("ALTITUDE_CLIENT_SECRET")
-	audience := os.Getenv("ALTIUDE_AUDIENCE")
-	baseUrl := "https://api.platform.thgaltitude.com"
+	mode := client.Local
 
-	if !config.Audience.IsNull() {
-		audience = config.Audience.ValueString()
+	if !config.Mode.IsNull() {
+		mode = client.Mode(config.Mode.ValueString())
 	}
 
 	if !config.ClientId.IsNull() {
@@ -128,16 +132,6 @@ func (p *altitudeProvider) Configure(ctx context.Context, req provider.Configure
 
 	if !config.ClientSecret.IsNull() {
 		clientSecret = config.ClientSecret.ValueString()
-	}
-
-	if !config.BaseUrl.IsNull() {
-		baseUrl = config.BaseUrl.ValueString()
-	} else {
-		resp.Diagnostics.AddWarning(
-			"Using Default Base URL",
-			"The default base URL of "+baseUrl+" is being used. Please set the base_url configuration value if you do not want to use this default.",
-		)
-
 	}
 
 	if clientId == "" {
@@ -160,21 +154,10 @@ func (p *altitudeProvider) Configure(ctx context.Context, req provider.Configure
 		)
 	}
 
-	if audience == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("password"),
-			"Missing Altitude Audience",
-			"The provider cannot create the Altitude API client as there is a missing or empty value for the Altitude Audience. "+
-				"Set the audience value in the configuration or use the ALTIUDE_AUDIENCE environment variable. "+
-				"If either is already set, ensure the value is not empty.",
-		)
-	}
-
 	client, err := client.New(
-		baseUrl,
 		clientId,
 		clientSecret,
-		audience,
+		mode,
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -193,6 +176,7 @@ func (p *altitudeProvider) Configure(ctx context.Context, req provider.Configure
 func (p *altitudeProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewMTEConfigResource,
+		NewMTEDomainMappingResource,
 	}
 }
 

@@ -44,7 +44,7 @@ type RouteModel struct {
 	PreservePathPrefix types.Bool     `tfsdk:"preserve_path_prefix"`
 	CacheKey           *CacheKeyModel `tfsdk:"cache_key"`
 	AppendPathPrefix   types.String   `tfsdk:"append_path_prefix"`
-	ShieldLocation     ShieldLocation `tfsdk:"shield_location"`
+	ShieldLocation     types.String `tfsdk:"shield_location"`
 }
 
 type ShieldLocation string
@@ -322,8 +322,10 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			Path:               r.Path.ValueString(),
 			EnableSsl:          r.EnableSsl.ValueBool(),
 			PreservePathPrefix: r.PreservePathPrefix.ValueBool(),
-			AppendPathPrefix:   r.AppendPathPrefix.ValueString(),
-			ShieldLocation:     client.ShieldLocation(r.ShieldLocation),
+			ShieldLocation:     client.ShieldLocation(r.ShieldLocation.ValueString()),
+		}
+		if r.AppendPathPrefix.ValueString() != "" {
+			routesPostBody.AppendPathPrefix = r.AppendPathPrefix.ValueString()
 		}
 
 		if r.CacheKey != nil {
@@ -335,7 +337,7 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			for i, c := range r.CacheKey.Cookies {
 				cacheKeyCookies[i] = c.ValueString()
 			}
-			routesPostBody.CacheKey = client.CacheKeyDto{
+			routesPostBody.CacheKey = &client.CacheKeyDto{
 				Header: cacheKeyHeaders,
 				Cookie: cacheKeyCookies,
 			}
@@ -344,13 +346,16 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 		httpRoutes[i] = routesPostBody
 	}
 
-	return client.MTEConfigDto{
+	dto := client.MTEConfigDto{
 		Routes: httpRoutes,
-		BasicAuth: client.BasicAuthDto{
+	}
+	if m.Config.BasicAuth != nil {
+		dto.BasicAuth = &client.BasicAuthDto{
 			Username: m.Config.BasicAuth.Username.ValueString(),
 			Password: m.Config.BasicAuth.Password.ValueString(),
-		},
+		}
 	}
+	return dto
 }
 
 func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
@@ -375,7 +380,7 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 				Headers: cacheKeyHeaders,
 				Cookies: cacheKeyCookies,
 			},
-			ShieldLocation: ShieldLocation(r.ShieldLocation),
+			ShieldLocation: types.StringValue(string(r.ShieldLocation)),
 		}
 
 		routeModels[i] = routesPostBody

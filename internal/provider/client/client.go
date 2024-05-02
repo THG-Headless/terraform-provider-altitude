@@ -9,27 +9,59 @@ import (
 	"strings"
 )
 
+type Mode string
+
+const (
+	Production Mode = "Production"
+	UAT        Mode = "UAT"
+	Local      Mode = "Local"
+)
+
+type AltitudeClientVariables struct {
+	baseUrl  string
+	audience string
+	issuer   string
+}
+
 type Client struct {
-	baseUrl    string
-	httpClient *http.Client
-	token      string
+	clientVariables AltitudeClientVariables
+	httpClient      *http.Client
+	token           string
 }
 
 func New(
-	baseUrl string,
 	clientId string,
 	clientSecret string,
-	audience string) (*Client, error) {
+	mode Mode) (*Client, error) {
 	c := new(Client)
 	c.httpClient = http.DefaultClient
-	err := c.generateAuthToken(clientId, clientSecret, audience)
+	switch mode {
+	case Production:
+		c.clientVariables = AltitudeClientVariables{
+			baseUrl:  "https://api.platform.thgaltitude.com",
+			audience: "https://api.platform.thgaltitude.com/",
+			issuer:   "https://thgaltitude.eu.auth0.com",
+		}
+	case UAT:
+		c.clientVariables = AltitudeClientVariables{
+			baseUrl:  "https://uat-api.platform.thgaltitude.com",
+			audience: "https://platform.thgaltitude.co.uk/api/",
+			issuer:   "https://dev-thgaltitude.eu.auth0.com",
+		}
+	case Local:
+		c.clientVariables = AltitudeClientVariables{
+			baseUrl:  "http://localhost:8080",
+			audience: "http://localhost:8080/",
+			issuer:   "https://vega-local-dev.uk.auth0.com",
+		}
+	}
+	err := c.generateAuthToken(clientId, clientSecret)
 	if err != nil {
 		return nil, &AltitudeClientError{
 			"The Altitude Client is unable to generate an auth token",
 			err.Error(),
 		}
 	}
-	c.baseUrl = baseUrl
 	return c, nil
 }
 
@@ -51,7 +83,7 @@ func (c *Client) initiateRequest(
 	}
 	httpReq, err := http.NewRequest(
 		method,
-		fmt.Sprintf("%s%s", c.baseUrl, path),
+		fmt.Sprintf("%s%s", c.clientVariables.baseUrl, path),
 		body,
 	)
 	if err != nil {
@@ -59,6 +91,9 @@ func (c *Client) initiateRequest(
 			shortMessage: "Client Error",
 			detail:       fmt.Sprintf("Unable to create http request, received error: %s", err),
 		}
+	}
+	if method == http.MethodPost || method == http.MethodGet {
+		httpReq.Header.Set("Content-Type", "application/json")
 	}
 	c.addAuthenticationToRequest(httpReq)
 	return c.httpClient.Do(httpReq)
@@ -80,10 +115,9 @@ type AuthResBody struct {
 func (c *Client) generateAuthToken(
 	clientId string,
 	clientSecret string,
-	audience string,
 ) error {
 	authDto := AuthDto{
-		Audience:     audience,
+		Audience:     c.clientVariables.audience,
 		ClientId:     clientId,
 		ClientSecret: clientSecret,
 		GrantType:    "client_credentials",
@@ -102,7 +136,7 @@ func (c *Client) generateAuthToken(
 	}
 
 	resp, err := c.httpClient.Post(
-		fmt.Sprintf("https://%s/oauth/token", "thgaltitude.eu.auth0.com"),
+		fmt.Sprintf("%s/oauth/token", c.clientVariables.issuer),
 		"application/json",
 		bytes.NewBuffer(reqBody),
 	)

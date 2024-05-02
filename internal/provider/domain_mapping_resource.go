@@ -33,7 +33,7 @@ type MTEDomainMappingResourceModel struct {
 
 // Metadata implements resource.Resource.
 func (m *MTEDomainMappingResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_domain_mapping"
+	resp.TypeName = req.ProviderTypeName + "_mte_domain_mapping"
 }
 
 func (m *MTEDomainMappingResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {

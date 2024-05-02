@@ -17,6 +17,7 @@ func (c *Client) CreateMTEConfig(
 	input CreateMTEConfigInput,
 ) error {
 	jsonBody, err := json.Marshal(input.Config)
+	fmt.Print(string(jsonBody))
 	if err != nil {
 		return &AltitudeClientError{
 			"Input Error.",
