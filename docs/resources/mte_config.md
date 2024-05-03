@@ -61,7 +61,7 @@ Required:
 Optional:
 
 - `append_path_prefix` (String) A string which will be appended to the start of the path sent to the host.
-- `cache_key` (Attributes) An object specifying header and cookie names which should be added to the cache key. The result of this would lead to seperate cache hits for requests with different values of the header or cookie. (see [below for nested schema](#nestedatt--config--routes--cache_key))
+- `cache_key` (Attributes) An object specifying header and cookie names which should be added to the cache key. The result of this would lead to separate cache hits for requests with different values of the header or cookie. (see [below for nested schema](#nestedatt--config--routes--cache_key))
 - `shield_location` (String) This describes the location which all requests will be forwarded to before reaching the origin of this route.
 
 <a id="nestedatt--config--routes--cache_key"></a>
