@@ -43,17 +43,17 @@ func (p *altitudeProvider) Schema(ctx context.Context, req provider.SchemaReques
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"client_id": schema.StringAttribute{
-				Description: "The unique identifier for the Auth0 Application.",
+				Description: "The unique identifier for the OAuth Application.",
 				Optional:    true,
 				Sensitive:   true,
 			},
 			"client_secret": schema.StringAttribute{
-				Description: "The client secret for the Auth0 Application. Used to sign and validate the Client ID specified.",
+				Description: "The client secret for the OAuth Application. Used to sign and validate the Client ID specified.",
 				Optional:    true,
 				Sensitive:   true,
 			},
 			"mode": schema.StringAttribute{
-				MarkdownDescription: "The environment selected for development which in turn sets the base URL if not specified. This value can be either `Production`, `UAT` or `Local`. It defaults to Local.",
+				MarkdownDescription: "The environment selected for development which in turn sets the base URL for Altitude API. This value can be either `Production`, `UAT` or `Local`. It defaults to Local.",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.OneOf([]string{string(client.Production),

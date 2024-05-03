@@ -101,7 +101,7 @@ func (m *MTEConfigResource) Configure(ctx context.Context, req resource.Configur
 // Schema implements resource.Resource.
 func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Config lock to enable mte",
+		MarkdownDescription: "A resource which defines the various routes and other environment-specific config for a specific environment.",
 
 		Attributes: map[string]schema.Attribute{
 			"config": schema.SingleNestedAttribute{
@@ -113,19 +113,21 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 							Attributes: map[string]schema.Attribute{
 								"host": schema.StringAttribute{
 									Required:            true,
-									MarkdownDescription: "yo",
+									MarkdownDescription: "The downstream host MTE should direct to. This host should not contain the protocol or any slashes. A correct example would be docs.thgaltitude.com",
 								},
 								"path": schema.StringAttribute{
 									Required:            true,
-									MarkdownDescription: "yo",
+									MarkdownDescription: "The path prefix this route will be hosted on.",
 								},
 								"enable_ssl": schema.BoolAttribute{
 									Required:            true,
-									MarkdownDescription: "yo",
+									MarkdownDescription: "A boolean specifying whether the host defined requires a secure connection.",
 								},
 								"preserve_path_prefix": schema.BoolAttribute{
 									Required:            true,
-									MarkdownDescription: "yo",
+									MarkdownDescription: "A boolean specifying whether we should retain the path specified above when routing to the host. "+
+									"For example, if this was `true` and the path defined was `/foo`, when a client directs to `/foo/123` we would route "+
+									"to the host with the path set as `/foo/123`. If it was `false`, we would point to `/123`.",
 								},
 								"cache_key": schema.SingleNestedAttribute{
 									Optional: true,
@@ -133,21 +135,25 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 										"headers": schema.ListAttribute{
 											ElementType: types.StringType,
 											Required:    true,
+											MarkdownDescription: "A list of header names of which the cache key will differeniate upon the values of these headers.",
 										},
 										"cookies": schema.ListAttribute{
 											ElementType: types.StringType,
 											Required:    true,
+											MarkdownDescription: "A list of cookie names which the cache key will differeniate upon the values of these cookies.",
 										},
 									},
-									MarkdownDescription: "yo",
+									MarkdownDescription: "An object specifying header and cookie names which should be added to the cache key. The result "+
+									"of this would lead to seperate cache hits for requests with different values of the header or cookie.",
 								},
 								"append_path_prefix": schema.StringAttribute{
 									Optional:            true,
-									MarkdownDescription: "yo",
+									MarkdownDescription: "A string which will be appended to the start of the path sent to the host.",
 								},
 								"shield_location": schema.StringAttribute{
 									Optional:            true,
-									MarkdownDescription: "yo",
+									MarkdownDescription: "This describes the location which all requests will be forwarded to before reaching the origin "+
+									"of this route.",
 									Validators: []validator.String{
 										stringvalidator.OneOf([]string{string(London),
 											string(Manchester),
@@ -175,11 +181,11 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 						Attributes: map[string]schema.Attribute{
 							"username": schema.StringAttribute{
 								Required:            true,
-								MarkdownDescription: "yo",
+								MarkdownDescription: "The username which clients will enter to authorize viewing this environment.",
 							},
 							"password": schema.StringAttribute{
 								Required:            true,
-								MarkdownDescription: "yo",
+								MarkdownDescription: "The password which clients will enter to authorize viewing this environment.",
 							},
 						},
 					},
@@ -187,7 +193,8 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 			},
 			"environment_id": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "yo",
+				MarkdownDescription: "The environment ID which this config associates with. If this value changes, this will "+
+				"replace this resource. **Note**, if this occurred on a production site, this would lead to downtime.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

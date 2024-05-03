@@ -25,6 +25,6 @@ provider "altitude" {
 
 ### Optional
 
-- `client_id` (String, Sensitive) The unique identifier for the Auth0 Application.
-- `client_secret` (String, Sensitive) The client secret for the Auth0 Application. Used to sign and validate the Client ID specified.
-- `mode` (String) The environment selected for development which in turn sets the base URL if not specified. This value can be either `Production`, `UAT` or `Local`. It defaults to Local.
+- `client_id` (String, Sensitive) The unique identifier for the OAuth Application.
+- `client_secret` (String, Sensitive) The client secret for the OAuth Application. Used to sign and validate the Client ID specified.
+- `mode` (String) The environment selected for development which in turn sets the base URL for Altitude API. This value can be either `Production`, `UAT` or `Local`. It defaults to Local.

@@ -3,12 +3,12 @@
 page_title: "altitude_mte_config Resource - altitude"
 subcategory: ""
 description: |-
-  Config lock to enable mte
+  A resource which defines the various routes and other environment-specific config for a specific environment.
 ---
 
 # altitude_mte_config (Resource)
 
-Config lock to enable mte
+A resource which defines the various routes and other environment-specific config for a specific environment.
 
 ## Example Usage
 
@@ -35,7 +35,7 @@ resource "altitude_mte_config" "config" {
 ### Required
 
 - `config` (Attributes) (see [below for nested schema](#nestedatt--config))
-- `environment_id` (String) yo
+- `environment_id` (String) The environment ID which this config associates with. If this value changes, this will replace this resource. **Note**, if this occurred on a production site, this would lead to downtime.
 
 <a id="nestedatt--config"></a>
 ### Nested Schema for `config`
@@ -53,24 +53,24 @@ Optional:
 
 Required:
 
-- `enable_ssl` (Boolean) yo
-- `host` (String) yo
-- `path` (String) yo
-- `preserve_path_prefix` (Boolean) yo
+- `enable_ssl` (Boolean) A boolean specifying whether the host defined requires a secure connection.
+- `host` (String) The downstream host MTE should direct to. This host should not contain the protocol or any slashes. A correct example would be docs.thgaltitude.com
+- `path` (String) The path prefix this route will be hosted on.
+- `preserve_path_prefix` (Boolean) A boolean specifying whether we should retain the path specified above when routing to the host. For example, if this was `true` and the path defined was `/foo`, when a client directs to `/foo/123` we would route to the host with the path set as `/foo/123`. If it was `false`, we would point to `/123`.
 
 Optional:
 
-- `append_path_prefix` (String) yo
-- `cache_key` (Attributes) yo (see [below for nested schema](#nestedatt--config--routes--cache_key))
-- `shield_location` (String) yo
+- `append_path_prefix` (String) A string which will be appended to the start of the path sent to the host.
+- `cache_key` (Attributes) An object specifying header and cookie names which should be added to the cache key. The result of this would lead to seperate cache hits for requests with different values of the header or cookie. (see [below for nested schema](#nestedatt--config--routes--cache_key))
+- `shield_location` (String) This describes the location which all requests will be forwarded to before reaching the origin of this route.
 
 <a id="nestedatt--config--routes--cache_key"></a>
 ### Nested Schema for `config.routes.cache_key`
 
 Required:
 
-- `cookies` (List of String)
-- `headers` (List of String)
+- `cookies` (List of String) A list of cookie names which the cache key will differeniate upon the values of these cookies.
+- `headers` (List of String) A list of header names of which the cache key will differeniate upon the values of these headers.
 
 
 
@@ -79,5 +79,5 @@ Required:
 
 Required:
 
-- `password` (String) yo
-- `username` (String) yo
+- `password` (String) The password which clients will enter to authorize viewing this environment.
+- `username` (String) The username which clients will enter to authorize viewing this environment.

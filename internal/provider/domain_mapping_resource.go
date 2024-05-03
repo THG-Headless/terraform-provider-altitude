@@ -56,23 +56,24 @@ func (m *MTEDomainMappingResource) Configure(ctx context.Context, req resource.C
 // Schema implements resource.Resource.
 func (m *MTEDomainMappingResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Config lock to enable mte",
+		MarkdownDescription: "A mapping layer designed to map a domain, either a custom domain or standard domain, to an environment. "+
+		"This environment can then be associated with a [config resource](https://registry.terraform.io/providers/THG-Headless/altitude/latest/docs/resources/mte_config).",
 
 		Attributes: map[string]schema.Attribute{
 			"domain": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "yo",
+				MarkdownDescription: "The domain relating to the environment on which you are deploying.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"environment_id": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "yo",
+				MarkdownDescription: "The environment which relates with the [config resource](https://registry.terraform.io/providers/THG-Headless/altitude/latest/docs/resources/mte_config).",
 			},
 			"domain_mapping": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "yo",
+				MarkdownDescription: "The computed value stored as the mapper between domain and config.",
 			},
 		},
 	}

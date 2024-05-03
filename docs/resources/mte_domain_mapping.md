@@ -3,12 +3,12 @@
 page_title: "altitude_mte_domain_mapping Resource - altitude"
 subcategory: ""
 description: |-
-  Config lock to enable mte
+  A mapping layer designed to map a domain, either a custom domain or standard domain, to an environment. This environment can then be associated with a config resource https://registry.terraform.io/providers/THG-Headless/altitude/latest/docs/resources/mte_config.
 ---
 
 # altitude_mte_domain_mapping (Resource)
 
-Config lock to enable mte
+A mapping layer designed to map a domain, either a custom domain or standard domain, to an environment. This environment can then be associated with a [config resource](https://registry.terraform.io/providers/THG-Headless/altitude/latest/docs/resources/mte_config).
 
 ## Example Usage
 
@@ -24,9 +24,9 @@ resource "altitude_mte_domain_mapping" "mapping" {
 
 ### Required
 
-- `domain` (String) yo
-- `environment_id` (String) yo
+- `domain` (String) The domain relating to the environment on which you are deploying.
+- `environment_id` (String) The environment which relates with the [config resource](https://registry.terraform.io/providers/THG-Headless/altitude/latest/docs/resources/mte_config).
 
 ### Read-Only
 
-- `domain_mapping` (String) yo
+- `domain_mapping` (String) The computed value stored as the mapper between domain and config.
