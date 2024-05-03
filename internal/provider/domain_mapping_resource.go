@@ -56,8 +56,8 @@ func (m *MTEDomainMappingResource) Configure(ctx context.Context, req resource.C
 // Schema implements resource.Resource.
 func (m *MTEDomainMappingResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "A mapping layer designed to map a domain, either a custom domain or standard domain, to an environment. "+
-		"This environment can then be associated with a [config resource](https://registry.terraform.io/providers/THG-Headless/altitude/latest/docs/resources/mte_config).",
+		MarkdownDescription: "A mapping layer designed to map a domain, either a custom domain or standard domain, to an environment. " +
+			"This environment can then be associated with a [config resource](https://registry.terraform.io/providers/THG-Headless/altitude/latest/docs/resources/mte_config).",
 
 		Attributes: map[string]schema.Attribute{
 			"domain": schema.StringAttribute{
