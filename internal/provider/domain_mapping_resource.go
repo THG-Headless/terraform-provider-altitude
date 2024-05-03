@@ -28,7 +28,7 @@ type MTEDomainMappingResource struct {
 type MTEDomainMappingResourceModel struct {
 	EnvironmentId types.String `tfsdk:"environment_id"`
 	Domain        types.String `tfsdk:"domain"`
-	domainMapping types.String
+	DomainMapping types.String `tfsdk:"domain_mapping"`
 }
 
 // Metadata implements resource.Resource.
@@ -70,13 +70,17 @@ func (m *MTEDomainMappingResource) Schema(ctx context.Context, req resource.Sche
 				Required:            true,
 				MarkdownDescription: "yo",
 			},
+			"domain_mapping": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "yo",
+			},
 		},
 	}
 }
 
 // ImportState implements resource.ResourceWithImportState.
 func (m *MTEDomainMappingResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("domain"), req, resp)
 }
 
 // Create implements resource.Resource.
@@ -97,14 +101,14 @@ func (m *MTEDomainMappingResource) Create(ctx context.Context, req resource.Crea
 
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Failed to create MTE config",
+			"Failed to create MTE domain mapping",
 			"An error occurred while executing the creation. "+
 				"If unexpected, please report this issue to the provider developers.\n\n"+
 				"JSON Error: "+err.Error())
 		return
 	}
 
-	data.domainMapping = types.StringValue(domainMapping)
+	data.DomainMapping = types.StringValue(domainMapping)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -143,16 +147,16 @@ func (m *MTEDomainMappingResource) Read(ctx context.Context, req resource.ReadRe
 
 	domainMapping, err := m.client.ReadMteDomainMapping(
 		client.ReadMteDomainMappingInput{
-			Domain: data.domainMapping.ValueString(),
+			Domain: data.Domain.ValueString(),
 		},
 	)
 
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to get MTE Config", err.Error())
+		resp.Diagnostics.AddError("Failed to get MTE Domain Mapping", err.Error())
 		return
 	}
 
-	data.domainMapping = types.StringValue(domainMapping)
+	data.DomainMapping = types.StringValue(domainMapping)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -175,14 +179,14 @@ func (m *MTEDomainMappingResource) Update(ctx context.Context, req resource.Upda
 
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Failed to create MTE config",
+			"Failed to create MTE Domain Mapping",
 			"An error occurred while executing the creation. "+
 				"If unexpected, please report this issue to the provider developers.\n\n"+
 				"JSON Error: "+err.Error())
 		return
 	}
 
-	plan.domainMapping = types.StringValue(domainMapping)
+	plan.DomainMapping = types.StringValue(domainMapping)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 

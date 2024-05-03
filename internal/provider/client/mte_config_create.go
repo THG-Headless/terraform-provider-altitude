@@ -17,7 +17,6 @@ func (c *Client) CreateMTEConfig(
 	input CreateMTEConfigInput,
 ) error {
 	jsonBody, err := json.Marshal(input.Config)
-	fmt.Print(string(jsonBody))
 	if err != nil {
 		return &AltitudeClientError{
 			"Input Error.",
@@ -49,7 +48,7 @@ func (c *Client) CreateMTEConfig(
 		body, _ := io.ReadAll(httpRes.Body)
 		return &AltitudeClientError{
 			shortMessage: "Unexpected API Response",
-			detail:       fmt.Sprintf("The Altitude API Request returned a non-200 response of %s with body %s.", httpRes.Status, body),
+			detail:       fmt.Sprintf("The Altitude API Request returned a non-201 response of %s with body:\n%s", httpRes.Status, body),
 		}
 	}
 	return nil

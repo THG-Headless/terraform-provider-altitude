@@ -11,5 +11,3 @@ provider "altitude" {
   client_secret = "{{CLIENT SECRET}}"
   mode          = "Local"
 }
-
-

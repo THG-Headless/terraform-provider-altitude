@@ -26,3 +26,7 @@ resource "altitude_mte_domain_mapping" "mapping" {
 
 - `domain` (String) yo
 - `environment_id` (String) yo
+
+### Read-Only
+
+- `domain_mapping` (String) yo

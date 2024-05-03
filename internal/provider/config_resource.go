@@ -44,7 +44,7 @@ type RouteModel struct {
 	PreservePathPrefix types.Bool     `tfsdk:"preserve_path_prefix"`
 	CacheKey           *CacheKeyModel `tfsdk:"cache_key"`
 	AppendPathPrefix   types.String   `tfsdk:"append_path_prefix"`
-	ShieldLocation     types.String `tfsdk:"shield_location"`
+	ShieldLocation     types.String   `tfsdk:"shield_location"`
 }
 
 type ShieldLocation string
@@ -198,7 +198,7 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 
 // ImportState implements resource.ResourceWithImportState.
 func (m *MTEConfigResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("environment_id"), req, resp)
 }
 
 // Create implements resource.Resource.
@@ -304,7 +304,7 @@ func (m *MTEConfigResource) Update(ctx context.Context, req resource.UpdateReque
 
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Failed to create MTE config",
+			"Failed to update MTE config",
 			"An error occurred while executing the creation. "+
 				"If unexpected, please report this issue to the provider developers.\n\n"+
 				"JSON Error: "+err.Error())
@@ -361,36 +361,48 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 	var routeModels = make([]RouteModel, len(d.Routes))
 	for i, r := range d.Routes {
-		var cacheKeyHeaders = make([]types.String, len(r.CacheKey.Header))
-		var cacheKeyCookies = make([]types.String, len(r.CacheKey.Cookie))
-		for i, h := range r.CacheKey.Header {
-			cacheKeyHeaders[i] = types.StringValue(h)
-		}
-		for i, c := range r.CacheKey.Cookie {
-			cacheKeyCookies[i] = types.StringValue(c)
-		}
 
 		var routesPostBody = RouteModel{
 			Host:               types.StringValue(r.Host),
 			Path:               types.StringValue(r.Path),
 			EnableSsl:          types.BoolValue(r.EnableSsl),
 			PreservePathPrefix: types.BoolValue(r.PreservePathPrefix),
-			AppendPathPrefix:   types.StringValue(r.AppendPathPrefix),
-			CacheKey: &CacheKeyModel{
+		}
+		if r.CacheKey != nil {
+			var cacheKeyHeaders = make([]types.String, len(r.CacheKey.Header))
+			var cacheKeyCookies = make([]types.String, len(r.CacheKey.Cookie))
+			for i, h := range r.CacheKey.Header {
+				cacheKeyHeaders[i] = types.StringValue(h)
+			}
+			for i, c := range r.CacheKey.Cookie {
+				cacheKeyCookies[i] = types.StringValue(c)
+			}
+			routesPostBody.CacheKey = &CacheKeyModel{
 				Headers: cacheKeyHeaders,
 				Cookies: cacheKeyCookies,
-			},
-			ShieldLocation: types.StringValue(string(r.ShieldLocation)),
+			}
+		}
+
+		if r.ShieldLocation != "" {
+			routesPostBody.ShieldLocation = types.StringValue(string(r.ShieldLocation))
+		}
+
+		if r.AppendPathPrefix != "" {
+			routesPostBody.AppendPathPrefix = types.StringValue(r.AppendPathPrefix)
 		}
 
 		routeModels[i] = routesPostBody
 	}
 
-	return MTEConfigModel{
+	model := MTEConfigModel{
 		Routes: routeModels,
-		BasicAuth: &BasicAuthModel{
+	}
+	if d.BasicAuth != nil {
+		model.BasicAuth = &BasicAuthModel{
 			Username: types.StringValue(d.BasicAuth.Username),
 			Password: types.StringValue(d.BasicAuth.Password),
-		},
+		}
 	}
+
+	return model
 }

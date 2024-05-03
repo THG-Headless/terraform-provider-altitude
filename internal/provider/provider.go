@@ -29,7 +29,6 @@ type ConfiguredData struct {
 
 // ProviderModel describes the provider data model.
 type ProviderModel struct {
-	BaseUrl      types.String `tfsdk:"base_url"`
 	ClientId     types.String `tfsdk:"client_id"`
 	ClientSecret types.String `tfsdk:"client_secret"`
 	Mode         types.String `tfsdk:"mode"`
@@ -76,15 +75,6 @@ func (p *altitudeProvider) Configure(ctx context.Context, req provider.Configure
 
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	if config.BaseUrl.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("base_url"),
-			"Unknown Altitude API Base URL",
-			"The provider cannot create the Altitude API client as there is an unknown configuration value for the Altitude API base URL. "+
-				"Either target apply the source of the value first, set the value statically in the configuration, or use the default variable.",
-		)
 	}
 
 	if config.ClientId.IsUnknown() {
