@@ -8,7 +8,7 @@ import (
 )
 
 func TestAccConfigWithBasicAuthResource(t *testing.T) {
-	var TEST_ENVIRONMENT_ID = randomString(10)
+	var TEST_ENVIRONMENT_ID = randomString(11)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -32,7 +32,6 @@ func TestAccConfigWithBasicAuthResource(t *testing.T) {
 		},
 	})
 }
-
 
 func TestAccConfigWithoutBasicAuthResource(t *testing.T) {
 	var TEST_ENVIRONMENT_ID = randomString(10)

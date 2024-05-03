@@ -54,7 +54,7 @@ func (p *altitudeProvider) Schema(ctx context.Context, req provider.SchemaReques
 			},
 			"mode": schema.StringAttribute{
 				MarkdownDescription: "The environment selected for development which in turn sets the base URL if not specified. This value can be either `Production`, `UAT` or `Local`. It defaults to Local.",
-				Optional:    true,
+				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.OneOf([]string{string(client.Production),
 						string(client.UAT),

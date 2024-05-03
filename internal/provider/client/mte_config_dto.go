@@ -1,7 +1,7 @@
 package client
 
 type MTEConfigDto struct {
-	Routes    []RoutesDto  `json:"routes"`
+	Routes    []RoutesDto   `json:"routes"`
 	BasicAuth *BasicAuthDto `json:"basicAuth,omitempty"`
 }
 
@@ -15,7 +15,7 @@ type RoutesDto struct {
 	Path               string         `json:"path"`
 	EnableSsl          bool           `json:"enableSsl"`
 	PreservePathPrefix bool           `json:"preservePathPrefix"`
-	CacheKey           *CacheKeyDto    `json:"cacheKey,omitempty"`
+	CacheKey           *CacheKeyDto   `json:"cacheKey,omitempty"`
 	AppendPathPrefix   string         `json:"appendPathPrefix,omitempty"`
 	ShieldLocation     ShieldLocation `json:"shieldLocation,omitempty"`
 }
