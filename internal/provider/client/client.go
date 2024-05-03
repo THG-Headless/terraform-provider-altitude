@@ -17,6 +17,10 @@ const (
 	Local      Mode = "Local"
 )
 
+func (m *Mode) IsValid() bool {
+	return string(*m) == "Production" || string(*m) == "UAT" || string(*m) == "Local"
+}
+
 type AltitudeClientVariables struct {
 	baseUrl  string
 	audience string

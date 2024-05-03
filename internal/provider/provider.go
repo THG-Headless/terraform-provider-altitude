@@ -110,10 +110,17 @@ func (p *altitudeProvider) Configure(ctx context.Context, req provider.Configure
 
 	clientId := os.Getenv("ALTITUDE_CLIENT_ID")
 	clientSecret := os.Getenv("ALTITUDE_CLIENT_SECRET")
-	mode := client.Local
+	mode := client.Mode(os.Getenv("ALTITUDE_MODE"))
 
 	if !config.Mode.IsNull() {
 		mode = client.Mode(config.Mode.ValueString())
+	} else if !mode.IsValid() {
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("mode"),
+			"Unknown Altitude API Mode",
+			"The environment variable ALTITUDE_MODE was either unset or was not on of the permitted values. Defaulting to using the mode `Local`.",
+		)
+		mode = client.Local
 	}
 
 	if !config.ClientId.IsNull() {
