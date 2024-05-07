@@ -6,16 +6,16 @@ import (
 	"net/http"
 )
 
-type ReadMteDomainMappingInput struct {
+type ReadMteRulesMappingInput struct {
 	Domain string
 }
 
-func (c *Client) ReadMteDomainMapping(
-	input ReadMteDomainMappingInput,
+func (c *Client) ReadMteRulesMapping(
+	input ReadMteRulesMappingInput,
 ) (string, error) {
 	httpRes, err := c.initiateRequest(
 		http.MethodGet,
-		fmt.Sprintf("/v1/mte/domain-mapping?domain=%s", input.Domain),
+		fmt.Sprintf("/v1/mte/rules-mapping?domain=%s", input.Domain),
 		nil,
 	)
 

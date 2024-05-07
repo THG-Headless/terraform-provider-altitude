@@ -6,16 +6,16 @@ import (
 	"net/http"
 )
 
-type DeleteMteDomainMappingInput struct {
+type DeleteMteRulesMappingInput struct {
 	Domain string
 }
 
-func (c *Client) DeleteMteDomainMapping(
-	input DeleteMteDomainMappingInput,
+func (c *Client) DeleteMteRulesMapping(
+	input DeleteMteRulesMappingInput,
 ) error {
 	httpRes, err := c.initiateRequest(
 		http.MethodDelete,
-		fmt.Sprintf("/v1/mte/domain-mapping?domain=%s", input.Domain),
+		fmt.Sprintf("/v1/mte/rules-mapping?domain=%s", input.Domain),
 		nil,
 	)
 
@@ -29,7 +29,7 @@ func (c *Client) DeleteMteDomainMapping(
 	if httpRes.StatusCode == 404 {
 		return &AltitudeClientError{
 			shortMessage: "Domain not found",
-			detail:       fmt.Sprintf("The Domain %s does not have associated mapping.", input.Domain),
+			detail:       fmt.Sprintf("The Domain %s does not have an associated rule group.", input.Domain),
 		}
 	}
 
