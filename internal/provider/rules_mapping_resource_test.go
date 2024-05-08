@@ -17,15 +17,15 @@ func TestAccRulesMappingResource(t *testing.T) {
 			{
 				Config: testAccRulesMapping(TEST_DOMAIN, TEST_RULES_ID),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("altitude_mte_domain_mapping.tester", "domain", TEST_DOMAIN),
-					resource.TestCheckResourceAttr("altitude_mte_domain_mapping.tester", "rules_id", TEST_RULES_ID),
+					resource.TestCheckResourceAttr("altitude_mte_rules_mapping.tester", "domain", TEST_DOMAIN),
+					resource.TestCheckResourceAttr("altitude_mte_rules_mapping.tester", "rules_id", TEST_RULES_ID),
 				),
 			},
 			{
 				Config: testAccRulesMapping(TEST_DOMAIN, TEST_RULES_ID),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("altitude_mte_domain_mapping.tester", "domain", TEST_DOMAIN),
-					resource.TestCheckResourceAttr("altitude_mte_domain_mapping.tester", "rules_id", TEST_RULES_ID),
+					resource.TestCheckResourceAttr("altitude_mte_rules_mapping.tester", "domain", TEST_DOMAIN),
+					resource.TestCheckResourceAttr("altitude_mte_rules_mapping.tester", "rules_id", TEST_RULES_ID),
 				),
 			},
 		},
