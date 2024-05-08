@@ -174,6 +174,7 @@ func (p *altitudeProvider) Resources(ctx context.Context) []func() resource.Reso
 	return []func() resource.Resource{
 		NewMTEConfigResource,
 		NewMTEDomainMappingResource,
+		NewMTERulesMappingResource,
 	}
 }
 
