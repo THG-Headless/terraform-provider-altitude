@@ -96,7 +96,7 @@ func (c *Client) initiateRequest(
 			detail:       fmt.Sprintf("Unable to create http request, received error: %s", err),
 		}
 	}
-	if method == http.MethodPost || method == http.MethodGet {
+	if method == http.MethodPost || method == http.MethodPut || method == http.MethodGet {
 		httpReq.Header.Set("Content-Type", "application/json")
 	}
 	c.addAuthenticationToRequest(httpReq)

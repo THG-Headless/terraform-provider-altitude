@@ -9,22 +9,24 @@ import (
 
 func TestAccConfigWithBasicAuthResource(t *testing.T) {
 	var TEST_ENVIRONMENT_ID = randomString(11)
+	var INITIAL_HOST = "www.thgaltitude.com"
+	var SECONDARY_HOST = "www.altitude.com"
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVResourceConfigWithBasicAuth(TEST_ENVIRONMENT_ID),
+				Config: testAccKVResourceConfigWithBasicAuth(TEST_ENVIRONMENT_ID, INITIAL_HOST),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.host", "www.thgaltitude.com"),
+					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.host", INITIAL_HOST),
 					resource.TestCheckResourceAttr("altitude_mte_config.tester", "environment_id", TEST_ENVIRONMENT_ID),
 					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.basic_auth.username", "foobar"),
 				),
 			},
 			{
-				Config: testAccKVResourceConfigWithBasicAuth(TEST_ENVIRONMENT_ID),
+				Config: testAccKVResourceConfigWithBasicAuth(TEST_ENVIRONMENT_ID, SECONDARY_HOST),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.host", "www.thgaltitude.com"),
+					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.host", SECONDARY_HOST),
 					resource.TestCheckResourceAttr("altitude_mte_config.tester", "environment_id", TEST_ENVIRONMENT_ID),
 					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.basic_auth.username", "foobar"),
 				),
@@ -35,21 +37,23 @@ func TestAccConfigWithBasicAuthResource(t *testing.T) {
 
 func TestAccConfigWithoutBasicAuthResource(t *testing.T) {
 	var TEST_ENVIRONMENT_ID = randomString(10)
+	var INITIAL_HOST = "www.thgaltitude.com"
+	var SECONDARY_HOST = "www.altitude.com"
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVResourceConfigWithoutBasicAuth(TEST_ENVIRONMENT_ID),
+				Config: testAccKVResourceConfigWithoutBasicAuth(TEST_ENVIRONMENT_ID, INITIAL_HOST),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.host", "www.thgaltitude.com"),
+					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.host", INITIAL_HOST),
 					resource.TestCheckResourceAttr("altitude_mte_config.tester", "environment_id", TEST_ENVIRONMENT_ID),
 				),
 			},
 			{
-				Config: testAccKVResourceConfigWithoutBasicAuth(TEST_ENVIRONMENT_ID),
+				Config: testAccKVResourceConfigWithoutBasicAuth(TEST_ENVIRONMENT_ID, SECONDARY_HOST),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.host", "www.thgaltitude.com"),
+					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.host", SECONDARY_HOST),
 					resource.TestCheckResourceAttr("altitude_mte_config.tester", "environment_id", TEST_ENVIRONMENT_ID),
 				),
 			},
@@ -57,13 +61,13 @@ func TestAccConfigWithoutBasicAuthResource(t *testing.T) {
 	})
 }
 
-func testAccKVResourceConfigWithBasicAuth(environmentId string) string {
+func testAccKVResourceConfigWithBasicAuth(environmentId string, host string) string {
 	return fmt.Sprintf(`
 resource "altitude_mte_config" "tester" {
   config = {
     routes = [
       {
-        host                 = "www.thgaltitude.com"
+        host                 = "%s"
         path                 = "/test"
         enable_ssl           = true
         preserve_path_prefix = true
@@ -84,16 +88,16 @@ resource "altitude_mte_config" "tester" {
   }
   environment_id = "%s"
 }
-`, environmentId)
+`, host, environmentId)
 }
 
-func testAccKVResourceConfigWithoutBasicAuth(environmentId string) string {
+func testAccKVResourceConfigWithoutBasicAuth(environmentId string, host string) string {
 	return fmt.Sprintf(`
 resource "altitude_mte_config" "tester" {
   config = {
     routes = [
       {
-        host                 = "www.thgaltitude.com"
+        host                 = "%s"
         path                 = "/test"
         enable_ssl           = true
         preserve_path_prefix = true
@@ -110,5 +114,5 @@ resource "altitude_mte_config" "tester" {
   }
   environment_id = "%s"
 }
-`, environmentId)
+`, host, environmentId)
 }

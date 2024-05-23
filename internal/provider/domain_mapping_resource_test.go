@@ -19,7 +19,7 @@ func TestAccDomainMappingResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("altitude_mte_domain_mapping.tester", "domain", TEST_DOMAIN),
 					resource.TestCheckResourceAttr("altitude_mte_domain_mapping.tester", "environment_id", TEST_ENVIRONMENT_ID),
-					resource.TestCheckResourceAttr("altitude_mte_domain_mapping.tester", "domain_mapping", "altitude-config:"+TEST_ENVIRONMENT_ID),
+					resource.TestCheckResourceAttr("altitude_mte_domain_mapping.tester", "domain_mapping", TEST_ENVIRONMENT_ID),
 				),
 			},
 			{
@@ -27,7 +27,7 @@ func TestAccDomainMappingResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("altitude_mte_domain_mapping.tester", "domain", TEST_DOMAIN),
 					resource.TestCheckResourceAttr("altitude_mte_domain_mapping.tester", "environment_id", TEST_ENVIRONMENT_ID),
-					resource.TestCheckResourceAttr("altitude_mte_domain_mapping.tester", "domain_mapping", "altitude-config:"+TEST_ENVIRONMENT_ID),
+					resource.TestCheckResourceAttr("altitude_mte_domain_mapping.tester", "domain_mapping", TEST_ENVIRONMENT_ID),
 				),
 			},
 		},
