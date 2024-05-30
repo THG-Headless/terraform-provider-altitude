@@ -45,7 +45,7 @@ type RouteModel struct {
 	CacheKey           *CacheKeyModel `tfsdk:"cache_key"`
 	AppendPathPrefix   types.String   `tfsdk:"append_path_prefix"`
 	ShieldLocation     types.String   `tfsdk:"shield_location"`
-	RouteCacheMaxAge   types.String   `tfsdk:"route_cache_max_age"`
+	CacheMaxAge        types.String   `tfsdk:"cache_max_age"`
 }
 
 type ShieldLocation string
@@ -151,8 +151,8 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 									Optional:            true,
 									MarkdownDescription: "A string which will be appended to the start of the path sent to the host.",
 								},
-								"route_cache_max_age": schema.StringAttribute{
-									Required: true,
+								"cache_max_age": schema.StringAttribute{
+									Optional: true,
 									MarkdownDescription: "A string of an int that will be used to specify the max age the object called by the route should be stored in the cache",
 								},
 								"shield_location": schema.StringAttribute{
@@ -336,7 +336,7 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			EnableSsl:          r.EnableSsl.ValueBool(),
 			PreservePathPrefix: r.PreservePathPrefix.ValueBool(),
 			ShieldLocation:     client.ShieldLocation(r.ShieldLocation.ValueString()),
-			RouteCacheMaxAge:   r.RouteCacheMaxAge.ValueString(),
+			CacheMaxAge:   		r.CacheMaxAge.ValueString(),
 		}
 		if r.AppendPathPrefix.ValueString() != "" {
 			routesPostBody.AppendPathPrefix = r.AppendPathPrefix.ValueString()
@@ -401,8 +401,8 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 			routesPostBody.ShieldLocation = types.StringValue(string(r.ShieldLocation))
 		}
 
-		if r.RouteCacheMaxAge != "" {
-			routesPostBody.RouteCacheMaxAge = types.StringValue(string(r.RouteCacheMaxAge))
+		if r.CacheMaxAge != "" {
+			routesPostBody.CacheMaxAge = types.StringValue(string(r.CacheMaxAge))
 		}
 
 		if r.AppendPathPrefix != "" {
