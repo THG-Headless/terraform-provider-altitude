@@ -175,7 +175,6 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 											string(Mumbai),
 											string(Singapore),
 										}...,
-
 										),
 									},
 								},
