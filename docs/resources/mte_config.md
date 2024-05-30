@@ -22,7 +22,7 @@ resource "altitude_mte_config" "config" {
         enable_ssl           = true
         preserve_path_prefix = true
         shield_location      = "London"
-        route_max_age        = "360"
+        cache_max_age        = "360"
       }
     ]
   }
