@@ -153,7 +153,7 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 								},
 								"cache_max_age": schema.StringAttribute{
 									Optional: true,
-									MarkdownDescription: "A string of an int that will be used to specify the max age the object called by the route should be stored in the cache",
+									MarkdownDescription: "A string of an int that will be used to specify the time that the response of the route should be stored in the cache, in seconds.",
 								},
 								"shield_location": schema.StringAttribute{
 									Optional: true,
