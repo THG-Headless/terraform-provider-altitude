@@ -401,7 +401,7 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 		}
 
 		if r.CacheMaxAge != "" {
-			routesPostBody.CacheMaxAge = types.StringValue(string(r.CacheMaxAge))
+			routesPostBody.CacheMaxAge = types.StringValue(r.CacheMaxAge)
 		}
 
 		if r.AppendPathPrefix != "" {
