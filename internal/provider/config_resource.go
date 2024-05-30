@@ -152,7 +152,7 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 									MarkdownDescription: "A string which will be appended to the start of the path sent to the host.",
 								},
 								"cache_max_age": schema.StringAttribute{
-									Optional: true,
+									Optional:            true,
 									MarkdownDescription: "A string of an int that will be used to specify the time that the response of the route should be stored in the cache, in seconds.",
 								},
 								"shield_location": schema.StringAttribute{
@@ -335,7 +335,7 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			EnableSsl:          r.EnableSsl.ValueBool(),
 			PreservePathPrefix: r.PreservePathPrefix.ValueBool(),
 			ShieldLocation:     client.ShieldLocation(r.ShieldLocation.ValueString()),
-			CacheMaxAge:   		r.CacheMaxAge.ValueString(),
+			CacheMaxAge:        r.CacheMaxAge.ValueString(),
 		}
 		if r.AppendPathPrefix.ValueString() != "" {
 			routesPostBody.AppendPathPrefix = r.AppendPathPrefix.ValueString()
