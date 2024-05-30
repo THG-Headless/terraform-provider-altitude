@@ -18,7 +18,7 @@ type RoutesDto struct {
 	CacheKey           *CacheKeyDto   `json:"cacheKey,omitempty"`
 	AppendPathPrefix   string         `json:"appendPathPrefix,omitempty"`
 	ShieldLocation     ShieldLocation `json:"shieldLocation,omitempty"`
-	RouteCacheMaxAge   string         `json:"routeCacheMaxAge,omitempty"`
+	CacheMaxAge   string         	  `json:"cacheMaxAge,omitempty"`
 }
 
 type CacheKeyDto struct {
