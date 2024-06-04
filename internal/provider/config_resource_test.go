@@ -73,17 +73,17 @@ func TestAccConfigWithCacheMaxAgeResource(t *testing.T) {
 			{
 				Config: testAccKVResourceConfigCacheMaxAge(TEST_ENVIRONMENT_ID, INITIAL_HOST, ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.host", INITIAL_HOST),
-					resource.TestCheckResourceAttr("altitude_mte_config.tester", "environment_id", TEST_ENVIRONMENT_ID),
-					resource.TestCheckNoResourceAttr("altitude_mte_config.tester", "config.routes.0.cache_max_age"),
+					resource.TestCheckResourceAttr("altitude_mte_config.cache-field-test", "config.routes.0.host", INITIAL_HOST),
+					resource.TestCheckResourceAttr("altitude_mte_config.cache-field-test", "environment_id", TEST_ENVIRONMENT_ID),
+					resource.TestCheckNoResourceAttr("altitude_mte_config.cache-field-test", "config.routes.0.cache_max_age"),
 				),
 			},
 			{
 				Config: testAccKVResourceConfigCacheMaxAge(TEST_ENVIRONMENT_ID, INITIAL_HOST, CACHE_MAX_AGE),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.host", INITIAL_HOST),
-					resource.TestCheckResourceAttr("altitude_mte_config.tester", "environment_id", TEST_ENVIRONMENT_ID),
-					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.cache_max_age", CACHE_MAX_AGE),
+					resource.TestCheckResourceAttr("altitude_mte_config.cache-field-test", "config.routes.0.host", INITIAL_HOST),
+					resource.TestCheckResourceAttr("altitude_mte_config.cache-field-test", "environment_id", TEST_ENVIRONMENT_ID),
+					resource.TestCheckResourceAttr("altitude_mte_config.cache-field-test", "config.routes.0.cache_max_age", CACHE_MAX_AGE),
 				),
 			},
 		},
@@ -177,7 +177,7 @@ resource "altitude_mte_config" "cache-field-test" {
 `, host, environmentId)
 } else {
 	return fmt.Sprintf(`
-	resource "altitude_mte_config" "tester" {
+	resource "altitude_mte_config" "cache-field-test" {
 	  config = {
 		routes = [
 		  {
