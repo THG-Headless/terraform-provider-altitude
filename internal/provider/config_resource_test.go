@@ -107,7 +107,7 @@ resource "altitude_mte_config" "tester" {
         path                 = "/docs"
         enable_ssl           = false
         preserve_path_prefix = false
-		append_path_prefix	 = "foo"
+        append_path_prefix	 = "foo"
       }
     ]
 		basic_auth = {
@@ -130,14 +130,14 @@ resource "altitude_mte_config" "tester" {
         path                 = "/test"
         enable_ssl           = true
         preserve_path_prefix = true
-		shield_location		 = "London"
+        shield_location		 = "London"
       },
       {
         host                 = "docs.thgaltitude.com"
         path                 = "/docs"
         enable_ssl           = false
         preserve_path_prefix = false
-		append_path_prefix	 = "foo"
+        append_path_prefix	 = "foo"
       }
     ]
   }
@@ -157,14 +157,14 @@ resource "altitude_mte_config" "cache-field-test" {
         path                 = "/test"
         enable_ssl           = true
         preserve_path_prefix = true
-		shield_location		 = "London"
+        shield_location		 = "London"
       },
       {
         host                 = "docs.thgaltitude.com"
         path                 = "/docs"
         enable_ssl           = false
         preserve_path_prefix = false
-		append_path_prefix	 = "foo"
+        append_path_prefix	 = "foo"
       }
     ]
 		basic_auth = {
