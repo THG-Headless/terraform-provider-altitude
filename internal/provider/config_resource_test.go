@@ -61,7 +61,6 @@ func TestAccConfigWithoutBasicAuthResource(t *testing.T) {
 	})
 }
 
-
 func TestAccConfigWithCacheMaxAgeResource(t *testing.T) {
 	var TEST_ENVIRONMENT_ID = randomString(10)
 	var INITIAL_HOST = "www.thgaltitude.com"
@@ -148,7 +147,7 @@ resource "altitude_mte_config" "tester" {
 
 func testAccKVResourceConfigCacheMaxAge(environmentId string, host string, cacheMaxAge string) string {
 	if cacheMaxAge == "" {
-	return fmt.Sprintf(`
+		return fmt.Sprintf(`
 resource "altitude_mte_config" "cache-field-test" {
   config = {
     routes = [
@@ -175,8 +174,8 @@ resource "altitude_mte_config" "cache-field-test" {
   environment_id = "%s"
 }
 `, host, environmentId)
-} else {
-	return fmt.Sprintf(`
+	} else {
+		return fmt.Sprintf(`
 	resource "altitude_mte_config" "cache-field-test" {
 	  config = {
 		routes = [
@@ -204,5 +203,5 @@ resource "altitude_mte_config" "cache-field-test" {
 	  environment_id = "%s"
 	}
 	`, host, cacheMaxAge, environmentId)
-}
+	}
 }
