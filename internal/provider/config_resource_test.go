@@ -64,13 +64,13 @@ func TestAccConfigWithoutBasicAuthResource(t *testing.T) {
 func TestAccConfigWithCacheMaxAgeResource(t *testing.T) {
 	var TEST_ENVIRONMENT_ID = randomString(10)
 	var INITIAL_HOST = "www.thgaltitude.com"
-	var CACHE_MAX_AGE = "360"
+	var CACHE_MAX_AGE = 360
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVResourceConfigCacheMaxAge(TEST_ENVIRONMENT_ID, INITIAL_HOST, ""),
+				Config: testAccKVResourceConfigNoCacheMaxAge(TEST_ENVIRONMENT_ID, INITIAL_HOST),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("altitude_mte_config.cache-field-test", "config.routes.0.host", INITIAL_HOST),
 					resource.TestCheckResourceAttr("altitude_mte_config.cache-field-test", "environment_id", TEST_ENVIRONMENT_ID),
@@ -78,11 +78,11 @@ func TestAccConfigWithCacheMaxAgeResource(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVResourceConfigCacheMaxAge(TEST_ENVIRONMENT_ID, INITIAL_HOST, CACHE_MAX_AGE),
+				Config: testAccKVResourceConfigCacheMaxAge(TEST_ENVIRONMENT_ID, INITIAL_HOST, int64(CACHE_MAX_AGE)),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("altitude_mte_config.cache-field-test", "config.routes.0.host", INITIAL_HOST),
 					resource.TestCheckResourceAttr("altitude_mte_config.cache-field-test", "environment_id", TEST_ENVIRONMENT_ID),
-					resource.TestCheckResourceAttr("altitude_mte_config.cache-field-test", "config.routes.0.cache_max_age", CACHE_MAX_AGE),
+					resource.TestCheckResourceAttr("altitude_mte_config.cache-field-test", "config.routes.0.cache_max_age", fmt.Sprintf("%d", CACHE_MAX_AGE)),
 				),
 			},
 		},
@@ -145,8 +145,7 @@ resource "altitude_mte_config" "tester" {
 `, host, environmentId)
 }
 
-func testAccKVResourceConfigCacheMaxAge(environmentId string, host string, cacheMaxAge string) string {
-	if cacheMaxAge == "" {
+func testAccKVResourceConfigNoCacheMaxAge(environmentId string, host string) string {
 		return fmt.Sprintf(`
 resource "altitude_mte_config" "cache-field-test" {
   config = {
@@ -174,7 +173,9 @@ resource "altitude_mte_config" "cache-field-test" {
   environment_id = "%s"
 }
 `, host, environmentId)
-	} else {
+	} 
+
+func testAccKVResourceConfigCacheMaxAge(environmentId string, host string, cacheMaxAge int64) string {
 		return fmt.Sprintf(`
 	resource "altitude_mte_config" "cache-field-test" {
 	  config = {
@@ -185,7 +186,7 @@ resource "altitude_mte_config" "cache-field-test" {
 			enable_ssl           = true
 			preserve_path_prefix = true
 			shield_location		 = "London"
-			cache_max_age  		 = "%s"
+			cache_max_age  		 = %d
 		  },
 		  {
 			host                 = "docs.thgaltitude.com"
@@ -204,4 +205,3 @@ resource "altitude_mte_config" "cache-field-test" {
 	}
 	`, host, cacheMaxAge, environmentId)
 	}
-}

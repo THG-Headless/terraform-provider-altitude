@@ -22,7 +22,7 @@ resource "altitude_mte_config" "config" {
         enable_ssl           = true
         preserve_path_prefix = true
         shield_location      = "London"
-        cache_max_age        = "360"
+        cache_max_age        = 360
       }
     ]
   }
@@ -63,7 +63,7 @@ Optional:
 
 - `append_path_prefix` (String) A string which will be appended to the start of the path sent to the host.
 - `cache_key` (Attributes) An object specifying header and cookie names which should be added to the cache key. The result of this would lead to separate cache hits for requests with different values of the header or cookie. (see [below for nested schema](#nestedatt--config--routes--cache_key))
-- `cache_max_age` (String) A string of an int that will be used to specify the time that the response of the route should be stored in the cache, in seconds.
+- `cache_max_age` (Number) An int that will be used to specify the time that the response of the route should be stored in the cache, in seconds.
 - `shield_location` (String) This describes the location which all requests will be forwarded to before reaching the origin of this route.
 
 <a id="nestedatt--config--routes--cache_key"></a>
