@@ -335,7 +335,7 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			EnableSsl:          r.EnableSsl.ValueBool(),
 			PreservePathPrefix: r.PreservePathPrefix.ValueBool(),
 			ShieldLocation:     client.ShieldLocation(r.ShieldLocation.ValueString()),
-			CacheMaxAge:        r.CacheMaxAge.ValueInt64(),
+			CacheMaxAge:        r.CacheMaxAge.ValueInt64Pointer(),
 		}
 		if r.AppendPathPrefix.ValueString() != "" {
 			routesPostBody.AppendPathPrefix = r.AppendPathPrefix.ValueString()
@@ -400,8 +400,8 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 			routesPostBody.ShieldLocation = types.StringValue(string(r.ShieldLocation))
 		}
 
-		if r.CacheMaxAge != 0  {
-			routesPostBody.CacheMaxAge = types.Int64Value(r.CacheMaxAge)
+		if r.CacheMaxAge != nil  {
+			routesPostBody.CacheMaxAge = types.Int64Value(*r.CacheMaxAge)
 		}
 
 		if r.AppendPathPrefix != "" {
