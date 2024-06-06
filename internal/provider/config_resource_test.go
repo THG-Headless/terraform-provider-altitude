@@ -95,11 +95,11 @@ resource "altitude_mte_config" "tester" {
   config = {
     routes = [
       {
-		host                 = "%s"
-		path                 = "/test"
-		enable_ssl           = true
-		preserve_path_prefix = true
-		shield_location		 = "London"
+        host                 = "%s"
+        path                 = "/test"
+        enable_ssl           = true
+        preserve_path_prefix = true
+        shield_location      = "London"
       },
       {
         host                 = "docs.thgaltitude.com"
