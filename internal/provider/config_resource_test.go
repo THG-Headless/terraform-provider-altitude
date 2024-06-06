@@ -146,7 +146,7 @@ resource "altitude_mte_config" "tester" {
 }
 
 func testAccKVResourceConfigNoCacheMaxAge(environmentId string, host string) string {
-		return fmt.Sprintf(`
+	return fmt.Sprintf(`
 resource "altitude_mte_config" "cache-field-test" {
   config = {
     routes = [
@@ -173,10 +173,10 @@ resource "altitude_mte_config" "cache-field-test" {
   environment_id = "%s"
 }
 `, host, environmentId)
-	} 
+}
 
 func testAccKVResourceConfigCacheMaxAge(environmentId string, host string, cacheMaxAge int64) string {
-		return fmt.Sprintf(`
+	return fmt.Sprintf(`
 	resource "altitude_mte_config" "cache-field-test" {
 	  config = {
 		routes = [
@@ -204,4 +204,4 @@ func testAccKVResourceConfigCacheMaxAge(environmentId string, host string, cache
 	  environment_id = "%s"
 	}
 	`, host, cacheMaxAge, environmentId)
-	}
+}

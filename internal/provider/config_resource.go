@@ -400,7 +400,7 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 			routesPostBody.ShieldLocation = types.StringValue(string(r.ShieldLocation))
 		}
 
-		if r.CacheMaxAge != nil  {
+		if r.CacheMaxAge != nil {
 			routesPostBody.CacheMaxAge = types.Int64Value(*r.CacheMaxAge)
 		}
 
