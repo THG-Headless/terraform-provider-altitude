@@ -28,7 +28,7 @@ type loggingEndpointsDataSource struct {
 //loggingEndpointsDataSourceModel maps the data source schema data.
 type loggingEndpointsDataSourceModel struct {
 	Type			types.String								`tfsdk:"type"`
-	EnvironmentId	types.String								`tfsdk:"environmentId:`
+	EnvironmentId	types.String								`tfsdk:"environmentId"`
 	Config			getAbstractAccessLoggingConfigModel	`tfsdk:"config"`
 }
 
