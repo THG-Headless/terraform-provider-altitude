@@ -82,7 +82,7 @@ func (d *loggingEndpointsDataSource) Read(ctx context.Context, req datasource.Re
 
 	state.Type = types.StringValue(loggingEndpoints.Type)
 	state.EnvironmentId = types.StringValue(loggingEndpoints.EnvironmentId)
-	state.Config = AgetAbstractAccessLoggingConfigModel(loggingEndpoints.Config)
+	state.Config = getAbstractAccessLoggingConfigModel(loggingEndpoints.Config)
 
 	diags := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
