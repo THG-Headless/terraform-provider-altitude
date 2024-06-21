@@ -15,7 +15,7 @@ func TestAccLoggingEndpointsDataSource(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: `data "logging_endpoints" "test" {}`,
+				Config: `data "altitude_mte_logging_endpoints" "test" {}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.logging_endpoints.test", "logging_endpoints.type", TEST_TYPE),
 					resource.TestCheckResourceAttr("data.logging_endpoints.test", "logging_endpoints.environmentid", TEST_ENVIRONMENTID),

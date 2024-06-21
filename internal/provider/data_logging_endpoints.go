@@ -94,9 +94,6 @@ func (d *LoggingEndpointsDataSource) Schema(_ context.Context, _ datasource.Sche
 			"environmentid": schema.StringAttribute{
 				Computed: true,
 			},
-			// "config": schema.ObjectAttribute{
-			// 	Computed: true,
-			// },
 			"config": schema.SingleNestedAttribute{
 				Computed: true,
 				Attributes: map[string]schema.Attribute{
