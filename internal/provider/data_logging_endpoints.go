@@ -30,7 +30,7 @@ type loggingEndpointsDataSource struct {
 type loggingEndpointsDataSourceModel struct {
 	ID            types.String                        `tfsdk:"id"`
 	Type          types.String                        `tfsdk:"type"`
-	EnvironmentId types.String                        `tfsdk:"environmentId"`
+	EnvironmentId types.String                        `tfsdk:"environmentid"`
 	Config        getAbstractAccessLoggingConfigModel `tfsdk:"config"`
 }
 
@@ -71,7 +71,7 @@ func (d *loggingEndpointsDataSource) Schema(_ context.Context, _ datasource.Sche
 			"type": schema.StringAttribute{
 				Computed: true,
 			},
-			"environmentId": schema.StringAttribute{
+			"environmentid": schema.StringAttribute{
 				Computed: true,
 			},
 			"config": schema.ObjectAttribute{
