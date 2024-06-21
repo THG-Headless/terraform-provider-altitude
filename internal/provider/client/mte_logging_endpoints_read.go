@@ -7,17 +7,16 @@ import (
 	"net/http"
 )
 
-func (c *Client) ReadMTELoggingEndpoints(
-) (*MTELoggingEndpointsDto, error) {
+func (c *Client) ReadMTELoggingEndpoints() (*MTELoggingEndpointsDto, error) {
 	httpRes, err := c.initiateRequest(
 		http.MethodGet,
-		fmt.Sprintf("/v1/admin/logging"),
+		"/v1/admin/logging",
 		nil)
 
 	if err != nil {
 		return nil, &AltitudeClientError{
 			shortMessage: "HTTP Error",
-			detail: fmt.Sprintf("There has been an error with the http request, recieved error: %s", err),
+			detail:       fmt.Sprintf("There has been an error with the http request, received error: %s", err),
 		}
 	}
 
@@ -26,7 +25,7 @@ func (c *Client) ReadMTELoggingEndpoints(
 		body, _ := io.ReadAll(httpRes.Body)
 		return nil, &AltitudeClientError{
 			shortMessage: "Unexpected API Response",
-			detail: fmt.Sprintf("The Altitude API Request returned a non-200 response of %s with body %s.", httpRes.Status, body),
+			detail:       fmt.Sprintf("The Altitude API Request returned a non-200 response of %s with body %s.", httpRes.Status, body),
 		}
 	}
 
@@ -35,17 +34,17 @@ func (c *Client) ReadMTELoggingEndpoints(
 	if err != nil {
 		return nil, &AltitudeClientError{
 			shortMessage: "Body Read Error",
-			detail: "Unable to read response body",
+			detail:       "Unable to read response body",
 		}
 	}
-	
+
 	var dto MTELoggingEndpointsDto
 	err = json.Unmarshal(body, &dto)
 
 	if err != nil {
 		return nil, &AltitudeClientError{
 			shortMessage: "Body Read Error",
-			detail: "Unable to parse JSON bod from Altitude response",
+			detail:       "Unable to parse JSON bod from Altitude response",
 		}
 	}
 
