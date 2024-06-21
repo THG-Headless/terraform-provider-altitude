@@ -78,7 +78,7 @@ func (d *LoggingEndpointsDataSource) Configure(_ context.Context, req datasource
 
 // Metadata returns the data source type name.
 func (d *LoggingEndpointsDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_logging_endpoints"
+	resp.TypeName = req.ProviderTypeName + "_mte_logging_endpoints"
 }
 
 // Schema defines the schema for the data source.
