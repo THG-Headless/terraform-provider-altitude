@@ -12,33 +12,53 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ datasource.DataSource              = &loggingEndpointsDataSource{}
-	_ datasource.DataSourceWithConfigure = &loggingEndpointsDataSource{}
+	_ datasource.DataSource              = &LoggingEndpointsDataSource{}
+	_ datasource.DataSourceWithConfigure = &LoggingEndpointsDataSource{}
 )
 
 // NewLoggingEndpointsDataSource is a helper function to simplify the provider implementation.
 func NewLoggingEndpointsDataSource() datasource.DataSource {
-	return &loggingEndpointsDataSource{}
+	return &LoggingEndpointsDataSource{}
 }
 
 // coffeesDataSource is the data source implementation.
-type loggingEndpointsDataSource struct {
+type LoggingEndpointsDataSource struct {
 	client *client.Client
 }
 
 // loggingEndpointsDataSourceModel maps the data source schema data.
-type loggingEndpointsDataSourceModel struct {
+type LoggingEndpointsDataSourceModel struct {
 	ID            types.String                        `tfsdk:"id"`
 	Type          types.String                        `tfsdk:"type"`
 	EnvironmentId types.String                        `tfsdk:"environmentid"`
-	Config        getAbstractAccessLoggingConfigModel `tfsdk:"config"`
+	Config        GetAbstractAccessLoggingConfigModel `tfsdk:"config"`
 }
 
-type getAbstractAccessLoggingConfigModel struct {
+type GetAbstractAccessLoggingConfigModel struct {
+	NonSensititve NonSensitiveBqLoggingConfigModel `tfsdk:"nonsensitive"`
+	Sensitive     *SensitiveBqLoggingConfigModel   `tfsdk:"sensitive"`
+}
+
+type SensitiveBqLoggingConfigModel struct {
+	SecretKey types.String `tfsdk:"secretkey"`
+}
+
+type NonSensitiveBqLoggingConfigModel struct {
+	Dataset   types.String           `tfsdk:"dataset"`
+	ProjectId types.String           `tfsdk:"projectid"`
+	Table     types.String           `tfsdk:"table"`
+	Email     types.String           `tfsdk:"email"`
+	Headers   []BqLoggingHeaderModel `tfsdk:"headers"`
+}
+
+type BqLoggingHeaderModel struct {
+	Col     types.String `tfsdk:"col"`
+	Header  types.String `tfsdk:"header"`
+	Default types.String `tfsdk:"default"`
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *loggingEndpointsDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *LoggingEndpointsDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -57,12 +77,12 @@ func (d *loggingEndpointsDataSource) Configure(_ context.Context, req datasource
 }
 
 // Metadata returns the data source type name.
-func (d *loggingEndpointsDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *LoggingEndpointsDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_logging_endpoints"
 }
 
 // Schema defines the schema for the data source.
-func (d *loggingEndpointsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *LoggingEndpointsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -74,16 +94,63 @@ func (d *loggingEndpointsDataSource) Schema(_ context.Context, _ datasource.Sche
 			"environmentid": schema.StringAttribute{
 				Computed: true,
 			},
-			"config": schema.ObjectAttribute{
+			// "config": schema.ObjectAttribute{
+			// 	Computed: true,
+			// },
+			"config": schema.SingleNestedAttribute{
 				Computed: true,
+				Attributes: map[string]schema.Attribute{
+					"nonsensitive": schema.SingleNestedAttribute{
+						Computed: true,
+						Attributes: map[string]schema.Attribute{
+							"dataset": schema.StringAttribute{
+								Computed: true,
+							},
+							"projectid": schema.StringAttribute{
+								Computed: true,
+							},
+							"table": schema.StringAttribute{
+								Computed: true,
+							},
+							"email": schema.StringAttribute{
+								Computed: true,
+							},
+							"headers": schema.ListNestedAttribute{
+								Computed: true,
+								NestedObject: schema.NestedAttributeObject{
+									Attributes: map[string]schema.Attribute{
+										"col": schema.StringAttribute{
+											Computed: true,
+										},
+										"header": schema.StringAttribute{
+											Computed: true,
+										},
+										"default": schema.StringAttribute{
+											Computed: true,
+										},
+									},
+								},
+							},
+						},
+					},
+					"sensitive": schema.SingleNestedAttribute{
+						Optional: true,
+						Computed: true,
+						Attributes: map[string]schema.Attribute{
+							"secretkey": schema.StringAttribute{
+								Computed: true,
+							},
+						},
+					},
+				},
 			},
 		},
 	}
 }
 
 // Read refreshes the terraform state with the latest data.
-func (d *loggingEndpointsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state loggingEndpointsDataSourceModel
+func (d *LoggingEndpointsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var state LoggingEndpointsDataSourceModel
 
 	loggingEndpoints, err := d.client.ReadMTELoggingEndpoints()
 	if err != nil {
@@ -96,7 +163,7 @@ func (d *loggingEndpointsDataSource) Read(ctx context.Context, req datasource.Re
 
 	state.Type = types.StringValue(loggingEndpoints.Type)
 	state.EnvironmentId = types.StringValue(loggingEndpoints.EnvironmentId)
-	state.Config = getAbstractAccessLoggingConfigModel(loggingEndpoints.Config)
+	state.Config = transformToConfigResourceModel(loggingEndpoints.Config)
 	state.ID = types.StringValue("placeholder")
 
 	diags := resp.State.Set(ctx, &state)
@@ -104,4 +171,37 @@ func (d *loggingEndpointsDataSource) Read(ctx context.Context, req datasource.Re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+}
+
+func transformToConfigResourceModel(d client.MTELoggingEndpointsConfig) GetAbstractAccessLoggingConfigModel {
+	var headerModels = make([]BqLoggingHeaderModel, len(d.NonSensititve.Headers))
+
+	for i, r := range d.NonSensititve.Headers {
+		var headersBody = BqLoggingHeaderModel{
+			Col:     types.StringValue(r.Col),
+			Header:  types.StringValue(r.Header),
+			Default: types.StringValue(r.Default),
+		}
+
+		headerModels[i] = headersBody
+	}
+
+	var nonSensitiveBody = NonSensitiveBqLoggingConfigModel{
+		Dataset:   types.StringValue(d.NonSensititve.Dataset),
+		ProjectId: types.StringValue(d.NonSensititve.ProjectId),
+		Table:     types.StringValue(d.NonSensititve.Table),
+		Email:     types.StringValue(d.NonSensititve.Email),
+		Headers:   headerModels,
+	}
+
+	model := GetAbstractAccessLoggingConfigModel{
+		NonSensititve: nonSensitiveBody,
+	}
+	if d.Sensitive != nil {
+		model.Sensitive = &SensitiveBqLoggingConfigModel{
+			SecretKey: types.StringValue(d.Sensitive.SecretKey),
+		}
+	}
+
+	return model
 }
