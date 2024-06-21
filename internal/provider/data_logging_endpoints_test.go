@@ -20,7 +20,7 @@ func TestAccLoggingEndpointsDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr("data.logging_endpoints.test", "logging_endpoints.type", TEST_TYPE),
 					resource.TestCheckResourceAttr("data.logging_endpoints.test", "logging_endpoints.environmentid", TEST_ENVIRONMENTID),
 					resource.TestCheckResourceAttr("data.logging_endpoints.test", "logging_endpoints.config", TEST_CONFIG),
-					resource.TestCheckResourceAttr("data.hashicups_coffees.test", "id", "placeholder"),
+					resource.TestCheckResourceAttr("data.logging_endpoints.test", "id", "placeholder"),
 				),
 			},
 		},
