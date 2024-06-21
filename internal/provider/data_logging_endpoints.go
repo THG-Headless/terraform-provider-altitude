@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"terraform-provider-altitude/internal/provider/client"
 )
@@ -61,7 +62,19 @@ func (d *loggingEndpointsDataSource) Metadata(_ context.Context, req datasource.
 
 // Schema defines the schema for the data source.
 func (d *loggingEndpointsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"type": schema.StringAttribute{
+				Computed: true,
+			},
+			"environmentId": schema.StringAttribute{
+				Computed: true,
+			},
+			"config": schema.ObjectAttribute{
+				Computed: true,
+			},
+		},
+	}
 }
 
 // Read refreshes the terraform state with the latest data.
