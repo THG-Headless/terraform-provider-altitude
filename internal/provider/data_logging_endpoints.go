@@ -28,6 +28,7 @@ type loggingEndpointsDataSource struct {
 
 // loggingEndpointsDataSourceModel maps the data source schema data.
 type loggingEndpointsDataSourceModel struct {
+	ID            types.String                        `tfsdk:"id"`
 	Type          types.String                        `tfsdk:"type"`
 	EnvironmentId types.String                        `tfsdk:"environmentId"`
 	Config        getAbstractAccessLoggingConfigModel `tfsdk:"config"`
@@ -64,6 +65,9 @@ func (d *loggingEndpointsDataSource) Metadata(_ context.Context, req datasource.
 func (d *loggingEndpointsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+			},
 			"type": schema.StringAttribute{
 				Computed: true,
 			},
@@ -93,6 +97,7 @@ func (d *loggingEndpointsDataSource) Read(ctx context.Context, req datasource.Re
 	state.Type = types.StringValue(loggingEndpoints.Type)
 	state.EnvironmentId = types.StringValue(loggingEndpoints.EnvironmentId)
 	state.Config = getAbstractAccessLoggingConfigModel(loggingEndpoints.Config)
+	state.ID = types.StringValue("placeholder")
 
 	diags := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
