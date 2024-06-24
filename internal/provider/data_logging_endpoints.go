@@ -29,7 +29,7 @@ type LoggingEndpointsDataSource struct {
 // loggingEndpointsDataSourceModel maps the data source schema data.
 
 type LoggingEndpointsDataSourceModel struct {
-	Endpoints	[]LoggingEndpointDataSourceModel 	`tfsdk:"endpoints"`
+	Endpoints []LoggingEndpointDataSourceModel `tfsdk:"endpoints"`
 }
 type LoggingEndpointDataSourceModel struct {
 	ID            types.String                        `tfsdk:"id"`
@@ -44,12 +44,12 @@ type GetAbstractAccessLoggingConfigModel struct {
 	Table     types.String           `tfsdk:"table"`
 	Email     types.String           `tfsdk:"email"`
 	Headers   []BqLoggingHeaderModel `tfsdk:"headers"`
-	SecretKey types.String 			 `tfsdk:"secretkey"`
+	SecretKey types.String           `tfsdk:"secretkey"`
 }
 
 type BqLoggingHeaderModel struct {
 	ColumnName   types.String `tfsdk:"columnname"`
-	HeaderName  types.String `tfsdk:"headername"`
+	HeaderName   types.String `tfsdk:"headername"`
 	DefaultValue types.String `tfsdk:"defaultvalue"`
 }
 
@@ -152,15 +152,14 @@ func (d *LoggingEndpointsDataSource) Read(ctx context.Context, req datasource.Re
 
 	for _, endpoint := range loggingEndpoints.Endpoints {
 		endpointState := LoggingEndpointDataSourceModel{
-		  Type: types.StringValue(endpoint.Type),
-		  EnvironmentId: types.StringValue(endpoint.EnvironmentId),
-		  Config: transformToConfigResourceModel(endpoint.Config),
-		  ID: types.StringValue("placeholder"),
+			Type:          types.StringValue(endpoint.Type),
+			EnvironmentId: types.StringValue(endpoint.EnvironmentId),
+			Config:        transformToConfigResourceModel(endpoint.Config),
+			ID:            types.StringValue("placeholder"),
 		}
-	
-		state.Endpoints = append(state.Endpoints, endpointState)
-	  }
 
+		state.Endpoints = append(state.Endpoints, endpointState)
+	}
 
 	diags := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -174,8 +173,8 @@ func transformToConfigResourceModel(d client.MTELoggingEndpointsConfig) GetAbstr
 
 	for i, r := range d.Headers {
 		var headersBody = BqLoggingHeaderModel{
-			ColumnName:     types.StringValue(r.ColumnName),
-			HeaderName:  types.StringValue(r.HeaderName),
+			ColumnName:   types.StringValue(r.ColumnName),
+			HeaderName:   types.StringValue(r.HeaderName),
 			DefaultValue: types.StringValue(r.DefaultValue),
 		}
 
