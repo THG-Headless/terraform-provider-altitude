@@ -17,10 +17,10 @@ func TestAccLoggingEndpointsDataSource(t *testing.T) {
 			{
 				Config: `data "altitude_mte_logging_endpoints" "test" {}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("data.logging_endpoints.test", "logging_endpoints.type", TEST_TYPE),
-					resource.TestCheckResourceAttr("data.logging_endpoints.test", "logging_endpoints.environmentid", TEST_ENVIRONMENTID),
-					resource.TestCheckResourceAttr("data.logging_endpoints.test", "logging_endpoints.config", TEST_CONFIG),
-					resource.TestCheckResourceAttr("data.logging_endpoints.test", "id", "placeholder"),
+					resource.TestCheckResourceAttr("data.altitude_mte_logging_endpoints.test", "endpoints.0.type", TEST_TYPE),
+					resource.TestCheckResourceAttr("data.altitude_mte_logging_endpoints.test", "endpoints.0.environmentid", TEST_ENVIRONMENTID),
+					resource.TestCheckResourceAttr("data.altitude_mte_logging_endpoints.test", "endpoints.0.config", TEST_CONFIG),
+					resource.TestCheckResourceAttr("data.altitude_mte_logging_endpoints.test", "endpoints.0.id", "placeholder"),
 				),
 			},
 		},

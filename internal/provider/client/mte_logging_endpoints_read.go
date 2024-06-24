@@ -31,6 +31,7 @@ func (c *Client) ReadMTELoggingEndpoints() (*MTELoggingEndpointsDto, error) {
 
 	defer httpRes.Body.Close()
 	body, err := io.ReadAll(httpRes.Body)
+
 	if err != nil {
 		return nil, &AltitudeClientError{
 			shortMessage: "Body Read Error",
@@ -41,10 +42,11 @@ func (c *Client) ReadMTELoggingEndpoints() (*MTELoggingEndpointsDto, error) {
 	var dto MTELoggingEndpointsDto
 	err = json.Unmarshal(body, &dto)
 
+
 	if err != nil {
 		return nil, &AltitudeClientError{
 			shortMessage: "Body Read Error",
-			detail:       "Unable to parse JSON bod from Altitude response",
+			detail:       "Unable to parse JSON body from Altitude response",
 		}
 	}
 

@@ -17,46 +17,38 @@ description: |-
 
 ### Read-Only
 
-- `config` (Attributes) (see [below for nested schema](#nestedatt--config))
+- `endpoints` (Attributes List) (see [below for nested schema](#nestedatt--endpoints))
+
+<a id="nestedatt--endpoints"></a>
+### Nested Schema for `endpoints`
+
+Read-Only:
+
+- `config` (Attributes) (see [below for nested schema](#nestedatt--endpoints--config))
 - `environmentid` (String)
-- `id` (String) The ID of this resource.
+- `id` (String)
 - `type` (String)
 
-<a id="nestedatt--config"></a>
-### Nested Schema for `config`
+<a id="nestedatt--endpoints--config"></a>
+### Nested Schema for `endpoints.config`
 
 Optional:
 
-- `sensitive` (Attributes) (see [below for nested schema](#nestedatt--config--sensitive))
-
-Read-Only:
-
-- `nonsensitive` (Attributes) (see [below for nested schema](#nestedatt--config--nonsensitive))
-
-<a id="nestedatt--config--sensitive"></a>
-### Nested Schema for `config.sensitive`
-
-Read-Only:
-
 - `secretkey` (String)
-
-
-<a id="nestedatt--config--nonsensitive"></a>
-### Nested Schema for `config.nonsensitive`
 
 Read-Only:
 
 - `dataset` (String)
 - `email` (String)
-- `headers` (Attributes List) (see [below for nested schema](#nestedatt--config--nonsensitive--headers))
+- `headers` (Attributes List) (see [below for nested schema](#nestedatt--endpoints--config--headers))
 - `projectid` (String)
 - `table` (String)
 
-<a id="nestedatt--config--nonsensitive--headers"></a>
-### Nested Schema for `config.nonsensitive.headers`
+<a id="nestedatt--endpoints--config--headers"></a>
+### Nested Schema for `endpoints.config.headers`
 
 Read-Only:
 
-- `col` (String)
-- `default` (String)
-- `header` (String)
+- `columnname` (String)
+- `defaultvalue` (String)
+- `headername` (String)

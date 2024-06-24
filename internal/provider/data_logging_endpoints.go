@@ -27,7 +27,11 @@ type LoggingEndpointsDataSource struct {
 }
 
 // loggingEndpointsDataSourceModel maps the data source schema data.
+
 type LoggingEndpointsDataSourceModel struct {
+	Endpoints	[]LoggingEndpointDataSourceModel 	`tfsdk:"endpoints"`
+}
+type LoggingEndpointDataSourceModel struct {
 	ID            types.String                        `tfsdk:"id"`
 	Type          types.String                        `tfsdk:"type"`
 	EnvironmentId types.String                        `tfsdk:"environmentid"`
@@ -35,26 +39,18 @@ type LoggingEndpointsDataSourceModel struct {
 }
 
 type GetAbstractAccessLoggingConfigModel struct {
-	NonSensititve NonSensitiveBqLoggingConfigModel `tfsdk:"nonsensitive"`
-	Sensitive     *SensitiveBqLoggingConfigModel   `tfsdk:"sensitive"`
-}
-
-type SensitiveBqLoggingConfigModel struct {
-	SecretKey types.String `tfsdk:"secretkey"`
-}
-
-type NonSensitiveBqLoggingConfigModel struct {
 	Dataset   types.String           `tfsdk:"dataset"`
 	ProjectId types.String           `tfsdk:"projectid"`
 	Table     types.String           `tfsdk:"table"`
 	Email     types.String           `tfsdk:"email"`
 	Headers   []BqLoggingHeaderModel `tfsdk:"headers"`
+	SecretKey types.String 			 `tfsdk:"secretkey"`
 }
 
 type BqLoggingHeaderModel struct {
-	Col     types.String `tfsdk:"col"`
-	Header  types.String `tfsdk:"header"`
-	Default types.String `tfsdk:"default"`
+	ColumnName   types.String `tfsdk:"columnname"`
+	HeaderName  types.String `tfsdk:"headername"`
+	DefaultValue types.String `tfsdk:"defaultvalue"`
 }
 
 // Configure adds the provider configured client to the data source.
@@ -84,57 +80,54 @@ func (d *LoggingEndpointsDataSource) Metadata(_ context.Context, req datasource.
 func (d *LoggingEndpointsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
+			"endpoints": schema.ListNestedAttribute{
 				Computed: true,
-			},
-			"type": schema.StringAttribute{
-				Computed: true,
-			},
-			"environmentid": schema.StringAttribute{
-				Computed: true,
-			},
-			"config": schema.SingleNestedAttribute{
-				Computed: true,
-				Attributes: map[string]schema.Attribute{
-					"nonsensitive": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"dataset": schema.StringAttribute{
-								Computed: true,
-							},
-							"projectid": schema.StringAttribute{
-								Computed: true,
-							},
-							"table": schema.StringAttribute{
-								Computed: true,
-							},
-							"email": schema.StringAttribute{
-								Computed: true,
-							},
-							"headers": schema.ListNestedAttribute{
-								Computed: true,
-								NestedObject: schema.NestedAttributeObject{
-									Attributes: map[string]schema.Attribute{
-										"col": schema.StringAttribute{
-											Computed: true,
-										},
-										"header": schema.StringAttribute{
-											Computed: true,
-										},
-										"default": schema.StringAttribute{
-											Computed: true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"id": schema.StringAttribute{
+							Computed: true,
+						},
+						"type": schema.StringAttribute{
+							Computed: true,
+						},
+						"environmentid": schema.StringAttribute{
+							Computed: true,
+						},
+						"config": schema.SingleNestedAttribute{
+							Computed: true,
+							Attributes: map[string]schema.Attribute{
+								"dataset": schema.StringAttribute{
+									Computed: true,
+								},
+								"projectid": schema.StringAttribute{
+									Computed: true,
+								},
+								"table": schema.StringAttribute{
+									Computed: true,
+								},
+								"email": schema.StringAttribute{
+									Computed: true,
+								},
+								"headers": schema.ListNestedAttribute{
+									Computed: true,
+									NestedObject: schema.NestedAttributeObject{
+										Attributes: map[string]schema.Attribute{
+											"columnname": schema.StringAttribute{
+												Computed: true,
+											},
+											"headername": schema.StringAttribute{
+												Computed: true,
+											},
+											"defaultvalue": schema.StringAttribute{
+												Computed: true,
+											},
 										},
 									},
 								},
-							},
-						},
-					},
-					"sensitive": schema.SingleNestedAttribute{
-						Optional: true,
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"secretkey": schema.StringAttribute{
-								Computed: true,
+								"secretkey": schema.StringAttribute{
+									Computed: true,
+									Optional: true,
+								},
 							},
 						},
 					},
@@ -157,10 +150,17 @@ func (d *LoggingEndpointsDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	state.Type = types.StringValue(loggingEndpoints.Type)
-	state.EnvironmentId = types.StringValue(loggingEndpoints.EnvironmentId)
-	state.Config = transformToConfigResourceModel(loggingEndpoints.Config)
-	state.ID = types.StringValue("placeholder")
+	for _, endpoint := range loggingEndpoints.Endpoints {
+		endpointState := LoggingEndpointDataSourceModel{
+		  Type: types.StringValue(endpoint.Type),
+		  EnvironmentId: types.StringValue(endpoint.EnvironmentId),
+		  Config: transformToConfigResourceModel(endpoint.Config),
+		  ID: types.StringValue("placeholder"),
+		}
+	
+		state.Endpoints = append(state.Endpoints, endpointState)
+	  }
+
 
 	diags := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -170,33 +170,24 @@ func (d *LoggingEndpointsDataSource) Read(ctx context.Context, req datasource.Re
 }
 
 func transformToConfigResourceModel(d client.MTELoggingEndpointsConfig) GetAbstractAccessLoggingConfigModel {
-	var headerModels = make([]BqLoggingHeaderModel, len(d.NonSensititve.Headers))
+	var headerModels = make([]BqLoggingHeaderModel, len(d.Headers))
 
-	for i, r := range d.NonSensititve.Headers {
+	for i, r := range d.Headers {
 		var headersBody = BqLoggingHeaderModel{
-			Col:     types.StringValue(r.Col),
-			Header:  types.StringValue(r.Header),
-			Default: types.StringValue(r.Default),
+			ColumnName:     types.StringValue(r.ColumnName),
+			HeaderName:  types.StringValue(r.HeaderName),
+			DefaultValue: types.StringValue(r.DefaultValue),
 		}
 
 		headerModels[i] = headersBody
 	}
 
-	var nonSensitiveBody = NonSensitiveBqLoggingConfigModel{
-		Dataset:   types.StringValue(d.NonSensititve.Dataset),
-		ProjectId: types.StringValue(d.NonSensititve.ProjectId),
-		Table:     types.StringValue(d.NonSensititve.Table),
-		Email:     types.StringValue(d.NonSensititve.Email),
-		Headers:   headerModels,
-	}
-
 	model := GetAbstractAccessLoggingConfigModel{
-		NonSensititve: nonSensitiveBody,
-	}
-	if d.Sensitive != nil {
-		model.Sensitive = &SensitiveBqLoggingConfigModel{
-			SecretKey: types.StringValue(d.Sensitive.SecretKey),
-		}
+		Dataset:   types.StringValue(d.Dataset),
+		ProjectId: types.StringValue(d.ProjectId),
+		Table:     types.StringValue(d.Table),
+		Email:     types.StringValue(d.Email),
+		Headers:   headerModels,
 	}
 
 	return model
