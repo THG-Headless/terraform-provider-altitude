@@ -62,18 +62,17 @@ func (d *LoggingEndpointsDataSource) Configure(_ context.Context, req datasource
 	if req.ProviderData == nil {
 		return
 	}
+	resourceData, ok := req.ProviderData.(*ConfiguredData)
 
-	client, ok := req.ProviderData.(*client.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *altitudeProvider.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected *ConfiguredData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
-
 		return
 	}
 
-	d.client = client
+	d.client = resourceData.client
 }
 
 // Metadata returns the data source type name.
