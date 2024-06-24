@@ -1,7 +1,7 @@
 package client
 
 type MTELoggingEndpointsDto struct {
-	Endpoints	[]MTELoggingEndpoint	`json:"endpoints"`
+	Endpoints []MTELoggingEndpoint `json:"endpoints"`
 }
 
 type MTELoggingEndpoint struct {
@@ -16,11 +16,11 @@ type MTELoggingEndpointsConfig struct {
 	Table     string            `json:"table"`
 	Email     string            `json:"email"`
 	Headers   []BQLoggingHeader `json:"headers"`
-	SecretKey string 			`json:"secretKey"`
+	SecretKey string            `json:"secretKey"`
 }
 
 type BQLoggingHeader struct {
-	ColumnName    	string 	`json:"columnName"`
-	HeaderName  	string 	`json:"headerName"`
-	DefaultValue 	string 	`json:"defaultValue"`
+	ColumnName   string `json:"columnName"`
+	HeaderName   string `json:"headerName"`
+	DefaultValue string `json:"defaultValue"`
 }
