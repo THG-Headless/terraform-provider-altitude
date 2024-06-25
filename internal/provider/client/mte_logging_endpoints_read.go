@@ -45,7 +45,7 @@ func (c *Client) ReadMTELoggingEndpoints() (*MTELoggingEndpointsDto, error) {
 	if err != nil {
 		return nil, &AltitudeClientError{
 			shortMessage: "Body Read Error",
-			detail:       fmt.Sprintf("Unable to parse JSON body from Altitude response: %f", string(body)),
+			detail:       "Unable to parse JSON body from Altitude response: " + string(body),
 		}
 	}
 
