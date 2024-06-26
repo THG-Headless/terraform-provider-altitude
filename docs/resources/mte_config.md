@@ -25,6 +25,15 @@ resource "altitude_mte_config" "config" {
         cache_max_age        = 360
       }
     ]
+    conditional_headers = [
+      {
+        matching_header = "foo"
+        pattern         = "*.pattern.*"
+        new_header      = "bar"
+        match_value     = "match"
+        no_match_value  = "no match"
+      }
+    ]
   }
   environment_id = "test"
 }
@@ -48,6 +57,7 @@ Required:
 Optional:
 
 - `basic_auth` (Attributes) (see [below for nested schema](#nestedatt--config--basic_auth))
+- `conditional_headers` (Attributes List) (see [below for nested schema](#nestedatt--config--conditional_headers))
 
 <a id="nestedatt--config--routes"></a>
 ### Nested Schema for `config.routes`
@@ -83,3 +93,15 @@ Required:
 
 - `password` (String) The password which clients will enter to authorize viewing this environment.
 - `username` (String) The username which clients will enter to authorize viewing this environment.
+
+
+<a id="nestedatt--config--conditional_headers"></a>
+### Nested Schema for `config.conditional_headers`
+
+Required:
+
+- `match_value` (String) The value of the new header created if a match was found.
+- `matching_header` (String) The header who's value will be checked for a match
+- `new_header` (String) The new header created to hold the match or no match values
+- `no_match_value` (String) The value of the new header created if no match was found.
+- `pattern` (String) A glob pattern used to check the value of a given header for a match
