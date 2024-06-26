@@ -33,8 +33,8 @@ type MTEConfigResourceModel struct {
 }
 
 type MTEConfigModel struct {
-	Routes    []RouteModel    `tfsdk:"routes"`
-	BasicAuth *BasicAuthModel `tfsdk:"basic_auth"`
+	Routes             []RouteModel             `tfsdk:"routes"`
+	BasicAuth          *BasicAuthModel          `tfsdk:"basic_auth"`
 	ConditionalHeaders []ConditionalHeaderModel `tfsdk:"conditional_headers"`
 }
 
@@ -80,10 +80,10 @@ type BasicAuthModel struct {
 
 type ConditionalHeaderModel struct {
 	MatchingHeader types.String `tfsdk:"matching_header"`
-	Pattern types.String `tfsdk:"pattern"`
-	NewHeader types.String `tfsdk:"new_header"`
-	MatchValue types.String `tfsdk:"match_value"`
-	NoMatchValue types.String `tfsdk:"no_match_value"`
+	Pattern        types.String `tfsdk:"pattern"`
+	NewHeader      types.String `tfsdk:"new_header"`
+	MatchValue     types.String `tfsdk:"match_value"`
+	NoMatchValue   types.String `tfsdk:"no_match_value"`
 }
 
 // Metadata implements resource.Resource.
@@ -212,19 +212,19 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 									MarkdownDescription: "The header who's value will be checked for a match",
 								},
 								"pattern": schema.StringAttribute{
-									Required: true,
+									Required:            true,
 									MarkdownDescription: "A glob pattern used to check the value of a given header for a match",
 								},
 								"new_header": schema.StringAttribute{
-									Required: true,
+									Required:            true,
 									MarkdownDescription: "The new header created to hold the match or no match values",
 								},
 								"match_value": schema.StringAttribute{
-									Required: true,
+									Required:            true,
 									MarkdownDescription: "The value of the new header created if a match was found.",
 								},
 								"no_match_value": schema.StringAttribute{
-									Required: true,
+									Required:            true,
 									MarkdownDescription: "The value of the new header created if no match was found.",
 								},
 							},
