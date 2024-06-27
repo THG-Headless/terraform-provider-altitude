@@ -20,6 +20,7 @@ func TestAccLoggingEndpointsDataSource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.altitude_mte_logging_endpoints.test", "endpoints.0.config.projectid"),
 					resource.TestCheckResourceAttrSet("data.altitude_mte_logging_endpoints.test", "endpoints.0.config.table"),
 					resource.TestCheckResourceAttrSet("data.altitude_mte_logging_endpoints.test", "endpoints.0.config.email"),
+					resource.TestCheckResourceAttrSet("data.altitude_mte_logging_endpoints.test", "endpoints.0.config.secretkey"),
 					resource.TestCheckResourceAttrSet("data.altitude_mte_logging_endpoints.test", "endpoints.0.id"),
 				),
 			},
