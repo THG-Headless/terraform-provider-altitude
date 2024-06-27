@@ -44,7 +44,6 @@ type GetAbstractAccessLoggingConfigModel struct {
 	Table     types.String           `tfsdk:"table"`
 	Email     types.String           `tfsdk:"email"`
 	Headers   []BqLoggingHeaderModel `tfsdk:"headers"`
-	SecretKey types.String           `tfsdk:"secretkey"`
 }
 
 type BqLoggingHeaderModel struct {
@@ -123,10 +122,6 @@ func (d *LoggingEndpointsDataSource) Schema(_ context.Context, _ datasource.Sche
 											},
 										},
 									},
-								},
-								"secretkey": schema.StringAttribute{
-									Computed: true,
-									Optional: true,
 								},
 							},
 						},
