@@ -404,6 +404,23 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			Password: m.Config.BasicAuth.Password.ValueString(),
 		}
 	}
+
+	if len(m.Config.ConditionalHeaders) != 0 {
+		var condHeadersModels = make([]client.ConditionalHeaderDto, len(m.Config.ConditionalHeaders))
+		for i, c := range m.Config.ConditionalHeaders {
+
+			var condHeader = client.ConditionalHeaderDto{
+				MatchingHeader: c.MatchingHeader.ValueString(),
+				Pattern: c.Pattern.ValueString(),
+				NewHeader: c.NewHeader.ValueString(),
+				MatchValue: c.MatchValue.ValueString(),
+				NoMatchValue: c.NoMatchValue.ValueString(),
+			}
+			condHeadersModels[i] = condHeader
+			}
+			dto.ConditionalHeaders = condHeadersModels
+		}
+		fmt.Printf("%+v\n", dto)
 	return dto
 }
 
@@ -457,7 +474,7 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 		}
 	}
 
-	if d.ConditionalHeaders != nil {
+	if len(d.ConditionalHeaders) != 0 {
 
 		var condHeadersModels = make([]ConditionalHeaderModel, len(d.ConditionalHeaders))
 		for i, c := range d.ConditionalHeaders {
