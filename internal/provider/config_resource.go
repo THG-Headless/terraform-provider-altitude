@@ -457,5 +457,21 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 		}
 	}
 
+	if d.ConditionalHeaders != nil {
+
+		var condHeadersModels = make([]ConditionalHeaderModel, len(d.ConditionalHeaders))
+		for i, c := range d.ConditionalHeaders {
+			var condHeader = ConditionalHeaderModel{
+				MatchingHeader: types.StringValue(c.MatchingHeader),
+				Pattern: types.StringValue(c.Pattern),
+				NewHeader: types.StringValue(c.NewHeader),
+				MatchValue: types.StringValue(c.MatchValue),
+				NoMatchValue: types.StringValue(c.NoMatchValue),
+			}
+			condHeadersModels[i] = condHeader
+		}
+		model.ConditionalHeaders = condHeadersModels
+	}
+
 	return model
 }
