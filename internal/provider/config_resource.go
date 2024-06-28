@@ -420,7 +420,6 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			}
 			dto.ConditionalHeaders = condHeadersModels
 		}
-		fmt.Printf("%+v\n", dto)
 	return dto
 }
 

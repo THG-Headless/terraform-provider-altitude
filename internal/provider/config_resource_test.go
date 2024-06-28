@@ -96,7 +96,7 @@ func TestAccConfigWithConditionalHeadersCreateUpdateDelete(t *testing.T) {
 	var match_value = "foo"
 	var no_match_value = "bar"
 	var updated_matching_header = "header2"
-	var env_id = randomString(9)
+	var env_id = randomString(10)
 	var host = "www.thgaltitude.com"
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
