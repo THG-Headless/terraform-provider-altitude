@@ -56,7 +56,7 @@ func New(
 		c.clientVariables = AltitudeClientVariables{
 			baseUrl:  "http://localhost:8080",
 			audience: "http://localhost:8080/",
-			issuer:   "https://vega-local-dev.uk.auth0.com",
+			issuer:   "https://dev-thgaltitude.eu.auth0.com",
 		}
 	}
 	err := c.generateAuthToken(clientId, clientSecret)

@@ -36,3 +36,5 @@ website/vendor
 
 # Binary for provider
 terraform-provider-altitude
+
+.env

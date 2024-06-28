@@ -44,14 +44,14 @@ func TestAccConfigWithoutBasicAuthResource(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVResourceConfigWithoutBasicAuth(TEST_ENVIRONMENT_ID, INITIAL_HOST),
+				Config: testAccKVResourceConfigWithoutBasicAuth(TEST_ENVIRONMENT_ID, INITIAL_HOST, "tester"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.host", INITIAL_HOST),
 					resource.TestCheckResourceAttr("altitude_mte_config.tester", "environment_id", TEST_ENVIRONMENT_ID),
 				),
 			},
 			{
-				Config: testAccKVResourceConfigWithoutBasicAuth(TEST_ENVIRONMENT_ID, SECONDARY_HOST),
+				Config: testAccKVResourceConfigWithoutBasicAuth(TEST_ENVIRONMENT_ID, SECONDARY_HOST, "tester"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("altitude_mte_config.tester", "config.routes.0.host", SECONDARY_HOST),
 					resource.TestCheckResourceAttr("altitude_mte_config.tester", "environment_id", TEST_ENVIRONMENT_ID),
@@ -89,6 +89,47 @@ func TestAccConfigWithCacheMaxAgeResource(t *testing.T) {
 	})
 }
 
+func TestAccConfigWithConditionalHeadersCreateUpdateDelete(t *testing.T) {
+	var matching_header = "testHeader"
+	var pattern = "*123*"
+	var new_header = "testNewHeader"
+	var match_value = "foo"
+	var no_match_value = "bar"
+	var updated_matching_header = "header2"
+	var env_id = randomString(10)
+	var host = "www.thgaltitude.com"
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKVResourceConfigWithConditionalHeaders(matching_header, pattern, new_header, match_value, no_match_value, env_id),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers.0.matching_header", matching_header),
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers.0.pattern", pattern),
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers.0.new_header", new_header),
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers.0.match_value", match_value),
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers.0.no_match_value", no_match_value),
+				),
+			},
+			{
+				Config: testAccKVResourceConfigWithConditionalHeaders(updated_matching_header, pattern, new_header, match_value, no_match_value, env_id),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers.0.matching_header", updated_matching_header),
+				),
+			},
+			{
+				Config: testAccKVResourceConfigWithoutBasicAuth(env_id, host, "cond-header-test"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers"),
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.routes.0.host", host),
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "environment_id", env_id),
+				),
+			},
+		},
+	})
+}
+
 func testAccKVResourceConfigWithBasicAuth(environmentId string, host string) string {
 	return fmt.Sprintf(`
 resource "altitude_mte_config" "tester" {
@@ -119,9 +160,9 @@ resource "altitude_mte_config" "tester" {
 `, host, environmentId)
 }
 
-func testAccKVResourceConfigWithoutBasicAuth(environmentId string, host string) string {
+func testAccKVResourceConfigWithoutBasicAuth(environmentId string, host string, name string) string {
 	return fmt.Sprintf(`
-resource "altitude_mte_config" "tester" {
+resource "altitude_mte_config" "%s" {
   config = {
     routes = [
       {
@@ -142,7 +183,7 @@ resource "altitude_mte_config" "tester" {
   }
   environment_id = "%s"
 }
-`, host, environmentId)
+`, name, host, environmentId)
 }
 
 func testAccKVResourceConfigNoCacheMaxAge(environmentId string, host string) string {
@@ -204,4 +245,32 @@ func testAccKVResourceConfigCacheMaxAge(environmentId string, host string, cache
 	  environment_id = "%s"
 	}
 	`, host, cacheMaxAge, environmentId)
+}
+
+func testAccKVResourceConfigWithConditionalHeaders(matchHeader string, pattern string, newHeader string, matchValue string, noMatchValue string, envId string) string {
+	return fmt.Sprintf(`
+	resource "altitude_mte_config" "cond-header-test" {
+	  config = {
+		routes = [
+		  {
+			host                 = "testhost"
+			path                 = "/test"
+			enable_ssl           = true
+			preserve_path_prefix = true
+			shield_location		 = "London"
+		  }
+		]
+		conditional_headers = [
+			{
+				matching_header = "%s"
+				pattern         = "%s"
+				new_header      = "%s"
+				match_value     = "%s"
+				no_match_value  = "%s"
+			}
+		]
+	  }
+	  environment_id = "%s"
+	}
+	`, matchHeader, pattern, newHeader, matchValue, noMatchValue, envId)
 }

@@ -33,8 +33,9 @@ type MTEConfigResourceModel struct {
 }
 
 type MTEConfigModel struct {
-	Routes    []RouteModel    `tfsdk:"routes"`
-	BasicAuth *BasicAuthModel `tfsdk:"basic_auth"`
+	Routes             []RouteModel             `tfsdk:"routes"`
+	BasicAuth          *BasicAuthModel          `tfsdk:"basic_auth"`
+	ConditionalHeaders []ConditionalHeaderModel `tfsdk:"conditional_headers"`
 }
 
 type RouteModel struct {
@@ -75,6 +76,14 @@ type CacheKeyModel struct {
 type BasicAuthModel struct {
 	Username types.String `tfsdk:"username"`
 	Password types.String `tfsdk:"password"`
+}
+
+type ConditionalHeaderModel struct {
+	MatchingHeader types.String `tfsdk:"matching_header"`
+	Pattern        types.String `tfsdk:"pattern"`
+	NewHeader      types.String `tfsdk:"new_header"`
+	MatchValue     types.String `tfsdk:"match_value"`
+	NoMatchValue   types.String `tfsdk:"no_match_value"`
 }
 
 // Metadata implements resource.Resource.
@@ -191,6 +200,33 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 							"password": schema.StringAttribute{
 								Required:            true,
 								MarkdownDescription: "The password which clients will enter to authorize viewing this environment.",
+							},
+						},
+					},
+					"conditional_headers": schema.ListNestedAttribute{
+						Optional: true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"matching_header": schema.StringAttribute{
+									Required:            true,
+									MarkdownDescription: "The header who's value will be checked for a match",
+								},
+								"pattern": schema.StringAttribute{
+									Required:            true,
+									MarkdownDescription: "A glob pattern used to check the value of a given header for a match",
+								},
+								"new_header": schema.StringAttribute{
+									Required:            true,
+									MarkdownDescription: "The new header created to hold the match or no match values",
+								},
+								"match_value": schema.StringAttribute{
+									Required:            true,
+									MarkdownDescription: "The value of the new header created if a match was found.",
+								},
+								"no_match_value": schema.StringAttribute{
+									Required:            true,
+									MarkdownDescription: "The value of the new header created if no match was found.",
+								},
 							},
 						},
 					},
@@ -368,6 +404,22 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			Password: m.Config.BasicAuth.Password.ValueString(),
 		}
 	}
+
+	if len(m.Config.ConditionalHeaders) != 0 {
+		var condHeadersModels = make([]client.ConditionalHeaderDto, len(m.Config.ConditionalHeaders))
+		for i, c := range m.Config.ConditionalHeaders {
+
+			var condHeader = client.ConditionalHeaderDto{
+				MatchingHeader: c.MatchingHeader.ValueString(),
+				Pattern:        c.Pattern.ValueString(),
+				NewHeader:      c.NewHeader.ValueString(),
+				MatchValue:     c.MatchValue.ValueString(),
+				NoMatchValue:   c.NoMatchValue.ValueString(),
+			}
+			condHeadersModels[i] = condHeader
+		}
+		dto.ConditionalHeaders = condHeadersModels
+	}
 	return dto
 }
 
@@ -419,6 +471,22 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 			Username: types.StringValue(d.BasicAuth.Username),
 			Password: types.StringValue(d.BasicAuth.Password),
 		}
+	}
+
+	if len(d.ConditionalHeaders) != 0 {
+
+		var condHeadersModels = make([]ConditionalHeaderModel, len(d.ConditionalHeaders))
+		for i, c := range d.ConditionalHeaders {
+			var condHeader = ConditionalHeaderModel{
+				MatchingHeader: types.StringValue(c.MatchingHeader),
+				Pattern:        types.StringValue(c.Pattern),
+				NewHeader:      types.StringValue(c.NewHeader),
+				MatchValue:     types.StringValue(c.MatchValue),
+				NoMatchValue:   types.StringValue(c.NoMatchValue),
+			}
+			condHeadersModels[i] = condHeader
+		}
+		model.ConditionalHeaders = condHeadersModels
 	}
 
 	return model
