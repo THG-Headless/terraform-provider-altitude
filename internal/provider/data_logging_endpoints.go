@@ -187,6 +187,7 @@ func transformToConfigResourceModel(d client.MTELoggingEndpointsConfig) GetAbstr
 		Table:     types.StringValue(d.Table),
 		Email:     types.StringValue(d.Email),
 		Headers:   headerModels,
+		SecretKey: types.StringValue(d.SecretKey),
 	}
 
 	return model
