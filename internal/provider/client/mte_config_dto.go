@@ -1,8 +1,8 @@
 package client
 
 type MTEConfigDto struct {
-	Routes    []RoutesDto   `json:"routes"`
-	BasicAuth *BasicAuthDto `json:"basicAuth,omitempty"`
+	Routes             []RoutesDto            `json:"routes"`
+	BasicAuth          *BasicAuthDto          `json:"basicAuth,omitempty"`
 	ConditionalHeaders []ConditionalHeaderDto `json:"conditionalHeaders,omitempty"`
 }
 

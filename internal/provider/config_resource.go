@@ -411,15 +411,15 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 
 			var condHeader = client.ConditionalHeaderDto{
 				MatchingHeader: c.MatchingHeader.ValueString(),
-				Pattern: c.Pattern.ValueString(),
-				NewHeader: c.NewHeader.ValueString(),
-				MatchValue: c.MatchValue.ValueString(),
-				NoMatchValue: c.NoMatchValue.ValueString(),
+				Pattern:        c.Pattern.ValueString(),
+				NewHeader:      c.NewHeader.ValueString(),
+				MatchValue:     c.MatchValue.ValueString(),
+				NoMatchValue:   c.NoMatchValue.ValueString(),
 			}
 			condHeadersModels[i] = condHeader
-			}
-			dto.ConditionalHeaders = condHeadersModels
 		}
+		dto.ConditionalHeaders = condHeadersModels
+	}
 	return dto
 }
 
@@ -479,10 +479,10 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 		for i, c := range d.ConditionalHeaders {
 			var condHeader = ConditionalHeaderModel{
 				MatchingHeader: types.StringValue(c.MatchingHeader),
-				Pattern: types.StringValue(c.Pattern),
-				NewHeader: types.StringValue(c.NewHeader),
-				MatchValue: types.StringValue(c.MatchValue),
-				NoMatchValue: types.StringValue(c.NoMatchValue),
+				Pattern:        types.StringValue(c.Pattern),
+				NewHeader:      types.StringValue(c.NewHeader),
+				MatchValue:     types.StringValue(c.MatchValue),
+				NoMatchValue:   types.StringValue(c.NoMatchValue),
 			}
 			condHeadersModels[i] = condHeader
 		}
