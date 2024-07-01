@@ -32,16 +32,13 @@ Read-Only:
 <a id="nestedatt--endpoints--config"></a>
 ### Nested Schema for `endpoints.config`
 
-Optional:
-
-- `secretkey` (String)
-
 Read-Only:
 
 - `dataset` (String)
 - `email` (String)
 - `headers` (Attributes List) (see [below for nested schema](#nestedatt--endpoints--config--headers))
 - `projectid` (String)
+- `secretkey` (String)
 - `table` (String)
 
 <a id="nestedatt--endpoints--config--headers"></a>

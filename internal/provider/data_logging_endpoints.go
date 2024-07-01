@@ -21,7 +21,7 @@ func NewLoggingEndpointsDataSource() datasource.DataSource {
 	return &LoggingEndpointsDataSource{}
 }
 
-// coffeesDataSource is the data source implementation.
+// loggingEndpointsDataSource is the data source implementation.
 type LoggingEndpointsDataSource struct {
 	client *client.Client
 }
@@ -126,7 +126,6 @@ func (d *LoggingEndpointsDataSource) Schema(_ context.Context, _ datasource.Sche
 								},
 								"secretkey": schema.StringAttribute{
 									Computed: true,
-									Optional: true,
 								},
 							},
 						},
