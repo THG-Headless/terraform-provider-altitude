@@ -40,7 +40,7 @@ type LoggingEndpointDataSourceModel struct {
 
 type GetAbstractAccessLoggingConfigModel struct {
 	Dataset   types.String           `tfsdk:"dataset"`
-	ProjectId types.String           `tfsdk:"projectid"`
+	ProjectId types.String           `tfsdk:"project_id"`
 	Table     types.String           `tfsdk:"table"`
 	Email     types.String           `tfsdk:"email"`
 	Headers   []BqLoggingHeaderModel `tfsdk:"headers"`
