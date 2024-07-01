@@ -44,13 +44,13 @@ type GetAbstractAccessLoggingConfigModel struct {
 	Table     types.String           `tfsdk:"table"`
 	Email     types.String           `tfsdk:"email"`
 	Headers   []BqLoggingHeaderModel `tfsdk:"headers"`
-	SecretKey types.String           `tfsdk:"secretkey"`
+	SecretKey types.String           `tfsdk:"secret_key"`
 }
 
 type BqLoggingHeaderModel struct {
-	ColumnName   types.String `tfsdk:"columnname"`
-	HeaderName   types.String `tfsdk:"headername"`
-	DefaultValue types.String `tfsdk:"defaultvalue"`
+	ColumnName   types.String `tfsdk:"column_name"`
+	HeaderName   types.String `tfsdk:"header_name"`
+	DefaultValue types.String `tfsdk:"default_value"`
 }
 
 // Configure adds the provider configured client to the data source.
