@@ -34,10 +34,10 @@ type LoggingEndpointsDataSourceModel struct {
 type LoggingEndpointDataSourceModel struct {
 	Type          types.String                        `tfsdk:"type"`
 	EnvironmentId types.String                        `tfsdk:"environmentid"`
-	Config        GetAbstractAccessLoggingConfigModel `tfsdk:"config"`
+	Config        GetBQAccessLoggingConfigModel `tfsdk:"config"`
 }
 
-type GetAbstractAccessLoggingConfigModel struct {
+type GetBQAccessLoggingConfigModel struct {
 	Dataset   types.String           `tfsdk:"dataset"`
 	ProjectId types.String           `tfsdk:"projectid"`
 	Table     types.String           `tfsdk:"table"`
@@ -163,7 +163,7 @@ func (d *LoggingEndpointsDataSource) Read(ctx context.Context, req datasource.Re
 	}
 }
 
-func transformToConfigResourceModel(d client.MTELoggingEndpointsConfig) GetAbstractAccessLoggingConfigModel {
+func transformToConfigResourceModel(d client.MTELoggingEndpointsConfig) GetBQAccessLoggingConfigModel {
 	var headerModels = make([]BqLoggingHeaderModel, len(d.Headers))
 
 	for i, r := range d.Headers {
@@ -176,7 +176,7 @@ func transformToConfigResourceModel(d client.MTELoggingEndpointsConfig) GetAbstr
 		headerModels[i] = headersBody
 	}
 
-	model := GetAbstractAccessLoggingConfigModel{
+	model := GetBQAccessLoggingConfigModel{
 		Dataset:   types.StringValue(d.Dataset),
 		ProjectId: types.StringValue(d.ProjectId),
 		Table:     types.StringValue(d.Table),
