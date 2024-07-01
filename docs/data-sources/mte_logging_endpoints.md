@@ -25,8 +25,7 @@ description: |-
 Read-Only:
 
 - `config` (Attributes) (see [below for nested schema](#nestedatt--endpoints--config))
-- `environmentid` (String)
-- `id` (String)
+- `environment_id` (String)
 - `type` (String)
 
 <a id="nestedatt--endpoints--config"></a>
@@ -37,8 +36,8 @@ Read-Only:
 - `dataset` (String)
 - `email` (String)
 - `headers` (Attributes List) (see [below for nested schema](#nestedatt--endpoints--config--headers))
-- `projectid` (String)
-- `secretkey` (String)
+- `project_id` (String)
+- `secret_key` (String)
 - `table` (String)
 
 <a id="nestedatt--endpoints--config--headers"></a>
@@ -46,6 +45,6 @@ Read-Only:
 
 Read-Only:
 
-- `columnname` (String)
-- `defaultvalue` (String)
-- `headername` (String)
+- `column_name` (String)
+- `default_value` (String)
+- `header_name` (String)
