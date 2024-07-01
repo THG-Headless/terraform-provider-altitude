@@ -145,14 +145,13 @@ func (d *LoggingEndpointsDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	for i, endpoint := range loggingEndpoints.Endpoints {
+	for _, endpoint := range loggingEndpoints.Endpoints {
 		endpointState := LoggingEndpointDataSourceModel{
 			Type:          types.StringValue(endpoint.Type),
 			EnvironmentId: types.StringValue(endpoint.EnvironmentId),
 			Config:        transformToConfigResourceModel(endpoint.Config),
 		}
-
-		state.Endpoints[i] = endpointState
+		state.Endpoints = append(state.Endpoints, endpointState)
 	}
 
 	diags := resp.State.Set(ctx, &state)
