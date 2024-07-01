@@ -34,7 +34,7 @@ type LoggingEndpointsDataSourceModel struct {
 type LoggingEndpointDataSourceModel struct {
 	ID            types.String                        `tfsdk:"id"`
 	Type          types.String                        `tfsdk:"type"`
-	EnvironmentId types.String                        `tfsdk:"environmentid"`
+	EnvironmentId types.String                        `tfsdk:"environment_id"`
 	Config        GetAbstractAccessLoggingConfigModel `tfsdk:"config"`
 }
 
