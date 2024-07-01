@@ -32,7 +32,6 @@ type LoggingEndpointsDataSourceModel struct {
 	Endpoints []LoggingEndpointDataSourceModel `tfsdk:"endpoints"`
 }
 type LoggingEndpointDataSourceModel struct {
-	ID            types.String                        `tfsdk:"id"`
 	Type          types.String                        `tfsdk:"type"`
 	EnvironmentId types.String                        `tfsdk:"environmentid"`
 	Config        GetAbstractAccessLoggingConfigModel `tfsdk:"config"`
@@ -84,13 +83,10 @@ func (d *LoggingEndpointsDataSource) Schema(_ context.Context, _ datasource.Sche
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"id": schema.StringAttribute{
-							Computed: true,
-						},
 						"type": schema.StringAttribute{
 							Computed: true,
 						},
-						"environmentid": schema.StringAttribute{
+						"environment_id": schema.StringAttribute{
 							Computed: true,
 						},
 						"config": schema.SingleNestedAttribute{
@@ -99,7 +95,7 @@ func (d *LoggingEndpointsDataSource) Schema(_ context.Context, _ datasource.Sche
 								"dataset": schema.StringAttribute{
 									Computed: true,
 								},
-								"projectid": schema.StringAttribute{
+								"project_id": schema.StringAttribute{
 									Computed: true,
 								},
 								"table": schema.StringAttribute{
@@ -112,19 +108,19 @@ func (d *LoggingEndpointsDataSource) Schema(_ context.Context, _ datasource.Sche
 									Computed: true,
 									NestedObject: schema.NestedAttributeObject{
 										Attributes: map[string]schema.Attribute{
-											"columnname": schema.StringAttribute{
+											"column_name": schema.StringAttribute{
 												Computed: true,
 											},
-											"headername": schema.StringAttribute{
+											"header_name": schema.StringAttribute{
 												Computed: true,
 											},
-											"defaultvalue": schema.StringAttribute{
+											"default_value": schema.StringAttribute{
 												Computed: true,
 											},
 										},
 									},
 								},
-								"secretkey": schema.StringAttribute{
+								"secret_key": schema.StringAttribute{
 									Computed: true,
 								},
 							},
@@ -149,23 +145,12 @@ func (d *LoggingEndpointsDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	for _, endpoint := range loggingEndpoints.Endpoints {
-		endpointState := LoggingEndpointDataSourceModel{
-			Type:          types.StringValue(endpoint.Type),
-			EnvironmentId: types.StringValue(endpoint.EnvironmentId),
-			Config:        transformToConfigResourceModel(endpoint.Config),
-			ID:            types.StringValue("placeholder"),
-		}
-
-		state.Endpoints = append(state.Endpoints, endpointState)
-	}
-
 	for i, endpoint := range loggingEndpoints.Endpoints {
 		endpointState := LoggingEndpointDataSourceModel{
 			Type:          types.StringValue(endpoint.Type),
 			EnvironmentId: types.StringValue(endpoint.EnvironmentId),
 			Config:        transformToConfigResourceModel(endpoint.Config),
-			ID:            types.StringValue("placeholder"),
+
 		}
 
 		state.Endpoints[i] = endpointState
