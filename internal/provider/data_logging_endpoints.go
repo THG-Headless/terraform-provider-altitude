@@ -33,13 +33,8 @@ type LoggingEndpointsDataSourceModel struct {
 }
 type LoggingEndpointDataSourceModel struct {
 	Type          types.String                        `tfsdk:"type"`
-<<<<<<< HEAD
-	EnvironmentId types.String                        `tfsdk:"environmentid"`
-	Config        GetBQAccessLoggingConfigModel `tfsdk:"config"`
-=======
 	EnvironmentId types.String                        `tfsdk:"environment_id"`
 	Config        GetAbstractAccessLoggingConfigModel `tfsdk:"config"`
->>>>>>> 860aa5b6175110647837b14ab5098d10a19c2bfb
 }
 
 type GetBQAccessLoggingConfigModel struct {
