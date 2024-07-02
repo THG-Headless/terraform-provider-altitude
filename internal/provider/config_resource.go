@@ -35,17 +35,27 @@ type MTEConfigResourceModel struct {
 type MTEConfigModel struct {
 	Routes    []RouteModel    `tfsdk:"routes"`
 	BasicAuth *BasicAuthModel `tfsdk:"basic_auth"`
+	Cache     []CacheModel    `tfsdk:"cache"`
 }
 
 type RouteModel struct {
-	Host               types.String   `tfsdk:"host"`
-	Path               types.String   `tfsdk:"path"`
-	EnableSsl          types.Bool     `tfsdk:"enable_ssl"`
-	PreservePathPrefix types.Bool     `tfsdk:"preserve_path_prefix"`
-	CacheKey           *CacheKeyModel `tfsdk:"cache_key"`
-	AppendPathPrefix   types.String   `tfsdk:"append_path_prefix"`
-	ShieldLocation     types.String   `tfsdk:"shield_location"`
-	CacheMaxAge        types.Int64    `tfsdk:"cache_max_age"`
+	Host               types.String `tfsdk:"host"`
+	Path               types.String `tfsdk:"path"`
+	EnableSsl          types.Bool   `tfsdk:"enable_ssl"`
+	PreservePathPrefix types.Bool   `tfsdk:"preserve_path_prefix"`
+	AppendPathPrefix   types.String `tfsdk:"append_path_prefix"`
+	ShieldLocation     types.String `tfsdk:"shield_location"`
+}
+
+type CacheModel struct {
+	Keys       *CacheKeyModel `tfsdk:"keys"`
+	TtlSeconds types.Int64    `tfsdk:"ttl_seconds"`
+	PathRules  *GlobMatcher   `tfsdk:"path_rules"`
+}
+
+type GlobMatcher struct {
+	AnyMatch  []types.String `tfsdk:"any_match"`
+	NoneMatch []types.String `tfsdk:"none_match"`
 }
 
 type ShieldLocation string
@@ -335,30 +345,12 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			EnableSsl:          r.EnableSsl.ValueBool(),
 			PreservePathPrefix: r.PreservePathPrefix.ValueBool(),
 			ShieldLocation:     client.ShieldLocation(r.ShieldLocation.ValueString()),
-			CacheMaxAge:        r.CacheMaxAge.ValueInt64Pointer(),
 		}
 		if r.AppendPathPrefix.ValueString() != "" {
 			routesPostBody.AppendPathPrefix = r.AppendPathPrefix.ValueString()
 		}
-
-		if r.CacheKey != nil {
-			var cacheKeyHeaders = make([]string, len(r.CacheKey.Headers))
-			var cacheKeyCookies = make([]string, len(r.CacheKey.Cookies))
-			for i, h := range r.CacheKey.Headers {
-				cacheKeyHeaders[i] = h.ValueString()
-			}
-			for i, c := range r.CacheKey.Cookies {
-				cacheKeyCookies[i] = c.ValueString()
-			}
-			routesPostBody.CacheKey = &client.CacheKeyDto{
-				Header: cacheKeyHeaders,
-				Cookie: cacheKeyCookies,
-			}
-		}
-
 		httpRoutes[i] = routesPostBody
 	}
-
 	dto := client.MTEConfigDto{
 		Routes: httpRoutes,
 	}
@@ -368,42 +360,59 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			Password: m.Config.BasicAuth.Password.ValueString(),
 		}
 	}
+	if m.Config.Cache != nil {
+		var httpCache = make([]client.CacheDto, len(m.Config.Cache))
+
+		for i, r := range m.Config.Cache {
+			var cacheBody = client.CacheDto{
+				TtlSeconds: r.TtlSeconds.ValueInt64Pointer(),
+			}
+			if r.Keys != nil {
+				var cacheKeyHeaders = make([]string, len(r.Keys.Headers))
+				var cacheKeyCookies = make([]string, len(r.Keys.Cookies))
+				for i, h := range r.Keys.Headers {
+					cacheKeyHeaders[i] = h.ValueString()
+				}
+				for i, c := range r.Keys.Cookies {
+					cacheKeyCookies[i] = c.ValueString()
+				}
+				cacheBody.Keys = &client.CacheKeyDto{
+					Header: cacheKeyHeaders,
+					Cookie: cacheKeyCookies,
+				}
+			}
+			if r.PathRules != nil {
+				var anyMatch = make([]string, len(r.PathRules.AnyMatch))
+				var noneMatch = make([]string, len(r.PathRules.NoneMatch))
+				for i, h := range r.PathRules.AnyMatch {
+					anyMatch[i] = h.ValueString()
+				}
+				for i, c := range r.PathRules.NoneMatch {
+					noneMatch[i] = c.ValueString()
+				}
+				cacheBody.PathRules = &client.MatcherDto{
+					AnyMatch: anyMatch,
+					NoneMatch: noneMatch,
+				}
+			}
+			httpCache[i] = cacheBody
+		}
+	}
 	return dto
 }
 
 func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 	var routeModels = make([]RouteModel, len(d.Routes))
 	for i, r := range d.Routes {
-
 		var routesPostBody = RouteModel{
 			Host:               types.StringValue(r.Host),
 			Path:               types.StringValue(r.Path),
 			EnableSsl:          types.BoolValue(r.EnableSsl),
 			PreservePathPrefix: types.BoolValue(r.PreservePathPrefix),
 		}
-		if r.CacheKey != nil {
-			var cacheKeyHeaders = make([]types.String, len(r.CacheKey.Header))
-			var cacheKeyCookies = make([]types.String, len(r.CacheKey.Cookie))
-			for i, h := range r.CacheKey.Header {
-				cacheKeyHeaders[i] = types.StringValue(h)
-			}
-			for i, c := range r.CacheKey.Cookie {
-				cacheKeyCookies[i] = types.StringValue(c)
-			}
-			routesPostBody.CacheKey = &CacheKeyModel{
-				Headers: cacheKeyHeaders,
-				Cookies: cacheKeyCookies,
-			}
-		}
-
 		if r.ShieldLocation != "" {
 			routesPostBody.ShieldLocation = types.StringValue(string(r.ShieldLocation))
 		}
-
-		if r.CacheMaxAge != nil {
-			routesPostBody.CacheMaxAge = types.Int64Value(*r.CacheMaxAge)
-		}
-
 		if r.AppendPathPrefix != "" {
 			routesPostBody.AppendPathPrefix = types.StringValue(r.AppendPathPrefix)
 		}
@@ -419,6 +428,45 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 			Username: types.StringValue(d.BasicAuth.Username),
 			Password: types.StringValue(d.BasicAuth.Password),
 		}
+	}
+
+	if d.Cache != nil {
+		var cacheModels = make([]CacheModel, len(d.Cache))
+		for i, c := range d.Cache {
+			var cacheModel = CacheModel{}
+			cacheModel.TtlSeconds = types.Int64Value(*c.TtlSeconds)
+			if c.Keys != nil {
+				var cacheKeyHeaders = make([]types.String, len(c.Keys.Header))
+				var cacheKeyCookies = make([]types.String, len(c.Keys.Cookie))
+				for i, h := range c.Keys.Header {
+					cacheKeyHeaders[i] = types.StringValue(h)
+				}
+				for i, c := range c.Keys.Cookie {
+					cacheKeyCookies[i] = types.StringValue(c)
+				}
+				cacheModel.Keys = &CacheKeyModel{
+					Headers: cacheKeyHeaders,
+					Cookies: cacheKeyCookies,
+				}
+			}
+			if c.PathRules != nil {
+				var anyMatch = make([]types.String, len(c.PathRules.AnyMatch))
+				var noneMatch = make([]types.String, len(c.PathRules.NoneMatch))
+				for i, h := range c.PathRules.AnyMatch {
+					anyMatch[i] = types.StringValue(h)
+				}
+				for i, c := range c.PathRules.NoneMatch {
+					noneMatch[i] = types.StringValue(c)
+				}
+				cacheModel.PathRules = &GlobMatcher{
+					AnyMatch: anyMatch,
+					NoneMatch: noneMatch,
+				}
+			}
+
+			cacheModels[i] = cacheModel
+		}
+		model.Cache = cacheModels
 	}
 
 	return model
