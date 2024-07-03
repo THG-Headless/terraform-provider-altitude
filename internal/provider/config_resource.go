@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -109,6 +110,37 @@ func (m *MTEConfigResource) Configure(ctx context.Context, req resource.Configur
 	m.client = resourceData.client
 }
 
+func (m *MTEConfigResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data MTEConfigResourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if data.Config.Cache != nil {
+		for _, c := range data.Config.Cache {
+			if c.Keys == nil && c.TtlSeconds == basetypes.NewInt64Null() {
+				resp.Diagnostics.AddAttributeError(
+					path.Root("cache"),
+					"Missing Attribute Configuration",
+					"Expected either `keys` or `ttl_seconds` to be set inside the cache object.",
+				)
+			}
+			if c.PathRules != nil {
+				if c.PathRules.AnyMatch == nil && c.PathRules.NoneMatch == nil {
+					resp.Diagnostics.AddAttributeError(
+						path.Root("cache.path_rules"),
+						"Missing Attribute Configuration",
+						"Expected either any_match or none_match to be set in the path rules.",
+					)
+				}
+			}
+		}
+	}
+}
+
 // Schema implements resource.Resource.
 func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
@@ -140,30 +172,9 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 										"For example, if this was `true` and the path defined was `/foo`, when a client directs to `/foo/123` we would route " +
 										"to the host with the path set as `/foo/123`. If it was `false`, we would point to `/123`.",
 								},
-								"cache_key": schema.SingleNestedAttribute{
-									Optional: true,
-									Attributes: map[string]schema.Attribute{
-										"headers": schema.ListAttribute{
-											ElementType:         types.StringType,
-											Required:            true,
-											MarkdownDescription: "A list of header names of which the cache key will differeniate upon the values of these headers.",
-										},
-										"cookies": schema.ListAttribute{
-											ElementType:         types.StringType,
-											Required:            true,
-											MarkdownDescription: "A list of cookie names which the cache key will differeniate upon the values of these cookies.",
-										},
-									},
-									MarkdownDescription: "An object specifying header and cookie names which should be added to the cache key. The result " +
-										"of this would lead to separate cache hits for requests with different values of the header or cookie.",
-								},
 								"append_path_prefix": schema.StringAttribute{
 									Optional:            true,
 									MarkdownDescription: "A string which will be appended to the start of the path sent to the host.",
-								},
-								"cache_max_age": schema.Int64Attribute{
-									Optional:            true,
-									MarkdownDescription: "An int that will be used to specify the time that the response of the route should be stored in the cache, in seconds.",
 								},
 								"shield_location": schema.StringAttribute{
 									Optional: true,
@@ -201,6 +212,51 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 							"password": schema.StringAttribute{
 								Required:            true,
 								MarkdownDescription: "The password which clients will enter to authorize viewing this environment.",
+							},
+						},
+					},
+					"cache": schema.ListNestedAttribute{
+						Optional:            true,
+						MarkdownDescription: "A list of settings designed to manipulate your cache without requiring you to set response headers.",
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"path_rules": schema.SingleNestedAttribute{
+									Optional:            true,
+									MarkdownDescription: "A set of glob rules which identify when the cache settings should be activated.",
+									Attributes: map[string]schema.Attribute{
+										"any_match": schema.ListAttribute{
+											ElementType:         types.StringType,
+											Optional:            true,
+											MarkdownDescription: "A list of glob paths where one of the list needs to match for the cache settings to be activated for a path. If both this field and `none_match` are specified, both need to be successful for the path to match.",
+										},
+										"none_match": schema.ListAttribute{
+											ElementType:         types.StringType,
+											Optional:            true,
+											MarkdownDescription: "A list of glob paths where all of the list needs to not match the path for the cache settings to be activated. If both this field and `any_match` are specified, both need to be successful for the path to match.",
+										},
+									},
+								},
+								"keys": schema.SingleNestedAttribute{
+									Optional: true,
+									Attributes: map[string]schema.Attribute{
+										"headers": schema.ListAttribute{
+											ElementType:         types.StringType,
+											Required:            true,
+											MarkdownDescription: "A list of header names of which the cache key will differeniate upon the values of these headers.",
+										},
+										"cookies": schema.ListAttribute{
+											ElementType:         types.StringType,
+											Required:            true,
+											MarkdownDescription: "A list of cookie names which the cache key will differeniate upon the values of these cookies.",
+										},
+									},
+									MarkdownDescription: "An object specifying header and cookie names which should be added to the cache key. The result " +
+										"of this would lead to separate cache hits for requests with different values of the header or cookie. One of this",
+								},
+								"ttl_seconds": schema.Int64Attribute{
+									Optional:            true,
+									MarkdownDescription: "An integer that will be used to specify the time that the response of the route should be stored in the cache, in seconds.",
+								},
 							},
 						},
 					},
@@ -391,12 +447,13 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 					noneMatch[i] = c.ValueString()
 				}
 				cacheBody.PathRules = &client.MatcherDto{
-					AnyMatch: anyMatch,
+					AnyMatch:  anyMatch,
 					NoneMatch: noneMatch,
 				}
 			}
 			httpCache[i] = cacheBody
 		}
+		dto.Cache = httpCache
 	}
 	return dto
 }
@@ -459,7 +516,7 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 					noneMatch[i] = types.StringValue(c)
 				}
 				cacheModel.PathRules = &GlobMatcher{
-					AnyMatch: anyMatch,
+					AnyMatch:  anyMatch,
 					NoneMatch: noneMatch,
 				}
 			}
