@@ -128,15 +128,6 @@ func (m *MTEConfigResource) ValidateConfig(ctx context.Context, req resource.Val
 					"Expected either `keys` or `ttl_seconds` to be set inside the cache object.",
 				)
 			}
-			if c.PathRules != nil {
-				if c.PathRules.AnyMatch == nil && c.PathRules.NoneMatch == nil {
-					resp.Diagnostics.AddAttributeError(
-						path.Root("cache.path_rules"),
-						"Missing Attribute Configuration",
-						"Expected either any_match or none_match to be set in the path rules.",
-					)
-				}
-			}
 		}
 	}
 }
@@ -226,12 +217,12 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 									Attributes: map[string]schema.Attribute{
 										"any_match": schema.ListAttribute{
 											ElementType:         types.StringType,
-											Optional:            true,
+											Required:            true,
 											MarkdownDescription: "A list of glob paths where one of the list needs to match for the cache settings to be activated for a path. If both this field and `none_match` are specified, both need to be successful for the path to match.",
 										},
 										"none_match": schema.ListAttribute{
 											ElementType:         types.StringType,
-											Optional:            true,
+											Required:            true,
 											MarkdownDescription: "A list of glob paths where all of the list needs to not match the path for the cache settings to be activated. If both this field and `any_match` are specified, both need to be successful for the path to match.",
 										},
 									},
@@ -491,7 +482,9 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 		var cacheModels = make([]CacheModel, len(d.Cache))
 		for i, c := range d.Cache {
 			var cacheModel = CacheModel{}
-			cacheModel.TtlSeconds = types.Int64Value(*c.TtlSeconds)
+			if c.TtlSeconds != nil {
+				cacheModel.TtlSeconds = types.Int64Value(*c.TtlSeconds)
+			}
 			if c.Keys != nil {
 				var cacheKeyHeaders = make([]types.String, len(c.Keys.Header))
 				var cacheKeyCookies = make([]types.String, len(c.Keys.Cookie))
