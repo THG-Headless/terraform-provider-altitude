@@ -21,8 +21,8 @@ type RoutesDto struct {
 }
 
 type CacheDto struct {
-	Keys      *CacheKeyDto `json:"keys,omitempty"`
-	TtlSeconds *int64      `json:"ttlSeconds,omitempty"`
+	Keys       *CacheKeyDto `json:"keys,omitempty"`
+	TtlSeconds *int64       `json:"ttlSeconds,omitempty"`
 	PathRules  *MatcherDto  `json:"pathRules,omitempty"`
 }
 
