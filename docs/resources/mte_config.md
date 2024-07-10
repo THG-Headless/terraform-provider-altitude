@@ -28,7 +28,7 @@ resource "altitude_mte_config" "config" {
     conditional_headers = [
       {
         matching_header = "foo"
-        pattern         = "*.pattern.*"
+        pattern         = ".*pattern(.*)"
         new_header      = "bar"
         match_value     = "match"
         no_match_value  = "no match"
@@ -100,8 +100,8 @@ Required:
 
 Required:
 
-- `match_value` (String) The value of the new header created if a match was found.
-- `matching_header` (String) The header who's value will be checked for a match
-- `new_header` (String) The new header created to hold the match or no match values
+- `match_value` (String) The value of the new header created if a match was found. Capture groups are supported, but specifying a capture group thats out of bounds will return an empty string. eg $3 where there are only two capture groups will be replaced with ''
+- `matching_header` (String) The header who's value will be checked for a match.
+- `new_header` (String) The new header created to hold the match or no match values.
 - `no_match_value` (String) The value of the new header created if no match was found.
-- `pattern` (String) A glob pattern used to check the value of a given header for a match
+- `pattern` (String) A regex pattern used to check the value of a given header for a match. The regex must cover the whole header value. Capture groups are supported
