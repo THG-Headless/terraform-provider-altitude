@@ -91,7 +91,7 @@ func TestAccConfigWithCacheMaxAgeResource(t *testing.T) {
 
 func TestAccConfigWithConditionalHeadersCreateUpdateDelete(t *testing.T) {
 	var matching_header = "testHeader"
-	var pattern = "*123*"
+	var pattern = ".*123.*"
 	var new_header = "testNewHeader"
 	var match_value = "foo"
 	var no_match_value = "bar"

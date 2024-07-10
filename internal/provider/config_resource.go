@@ -209,19 +209,21 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 							Attributes: map[string]schema.Attribute{
 								"matching_header": schema.StringAttribute{
 									Required:            true,
-									MarkdownDescription: "The header who's value will be checked for a match",
+									MarkdownDescription: "The header who's value will be checked for a match.",
 								},
 								"pattern": schema.StringAttribute{
 									Required:            true,
-									MarkdownDescription: "A glob pattern used to check the value of a given header for a match",
+									MarkdownDescription: "A regex pattern used to check the value of a given header for a match. The regex must cover the whole header value. " +
+										"Capture groups are supported",
 								},
 								"new_header": schema.StringAttribute{
 									Required:            true,
-									MarkdownDescription: "The new header created to hold the match or no match values",
+									MarkdownDescription: "The new header created to hold the match or no match values.",
 								},
 								"match_value": schema.StringAttribute{
 									Required:            true,
-									MarkdownDescription: "The value of the new header created if a match was found.",
+									MarkdownDescription: "The value of the new header created if a match was found. Capture groups are supported, but specifying a capture group thats out of " +
+										"bounds will return an empty string. eg $3 where there are only two capture groups will be replaced with ''",
 								},
 								"no_match_value": schema.StringAttribute{
 									Required:            true,
