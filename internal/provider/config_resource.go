@@ -48,15 +48,102 @@ type RouteModel struct {
 	ShieldLocation     types.String `tfsdk:"shield_location"`
 }
 
+func (r *RouteModel) transformToDto() client.RouteDto {
+	var routesPostBody = client.RouteDto{
+		Host:               r.Host.ValueString(),
+		Path:               r.Path.ValueString(),
+		EnableSsl:          r.EnableSsl.ValueBool(),
+		PreservePathPrefix: r.PreservePathPrefix.ValueBool(),
+		ShieldLocation:     client.ShieldLocation(r.ShieldLocation.ValueString()),
+	}
+	if r.AppendPathPrefix.ValueString() != "" {
+		routesPostBody.AppendPathPrefix = r.AppendPathPrefix.ValueString()
+	}
+	return routesPostBody
+}
+
+func transformRouteToResourceModel(r *client.RouteDto) RouteModel {
+	var routesPostBody = RouteModel{
+		Host:               types.StringValue(r.Host),
+		Path:               types.StringValue(r.Path),
+		EnableSsl:          types.BoolValue(r.EnableSsl),
+		PreservePathPrefix: types.BoolValue(r.PreservePathPrefix),
+	}
+	if r.ShieldLocation != "" {
+		routesPostBody.ShieldLocation = types.StringValue(string(r.ShieldLocation))
+	}
+	if r.AppendPathPrefix != "" {
+		routesPostBody.AppendPathPrefix = types.StringValue(r.AppendPathPrefix)
+	}
+	return routesPostBody
+}
+
 type CacheModel struct {
 	Keys       *CacheKeyModel `tfsdk:"keys"`
 	TtlSeconds types.Int64    `tfsdk:"ttl_seconds"`
 	PathRules  *GlobMatcher   `tfsdk:"path_rules"`
 }
 
+func (c *CacheModel) transformToDto() client.CacheDto {
+	var cacheBody = client.CacheDto{
+		TtlSeconds: c.TtlSeconds.ValueInt64Pointer(),
+	}
+	if c.Keys != nil {
+		cacheBody.Keys = c.Keys.transformToDto()
+	}
+	if c.PathRules != nil {
+		cacheBody.PathRules = c.PathRules.transformToDto()
+	}
+	return cacheBody
+}
+
+func trasformCacheModelToResourceModel(c *client.CacheDto) CacheModel {
+	var cacheModel = CacheModel{}
+	if c.TtlSeconds != nil {
+		cacheModel.TtlSeconds = types.Int64Value(*c.TtlSeconds)
+	}
+	if c.Keys != nil {
+		cacheModel.Keys = trasformCacheKeyModelToResourceModel(c.Keys)
+	}
+	if c.PathRules != nil {
+		cacheModel.PathRules = trasformMatcherToResourceModel(c.PathRules)
+	}
+	return cacheModel
+}
+
 type GlobMatcher struct {
 	AnyMatch  []types.String `tfsdk:"any_match"`
 	NoneMatch []types.String `tfsdk:"none_match"`
+}
+
+func (m *GlobMatcher) transformToDto() *client.MatcherDto {
+	var anyMatch = make([]string, len(m.AnyMatch))
+	var noneMatch = make([]string, len(m.NoneMatch))
+	for i, h := range m.AnyMatch {
+		anyMatch[i] = h.ValueString()
+	}
+	for i, c := range m.NoneMatch {
+		noneMatch[i] = c.ValueString()
+	}
+	return &client.MatcherDto{
+		AnyMatch:  anyMatch,
+		NoneMatch: noneMatch,
+	}
+}
+
+func trasformMatcherToResourceModel(m *client.MatcherDto) *GlobMatcher {
+	var anyMatch = make([]types.String, len(m.AnyMatch))
+	var noneMatch = make([]types.String, len(m.NoneMatch))
+	for i, h := range m.AnyMatch {
+		anyMatch[i] = types.StringValue(h)
+	}
+	for i, c := range m.NoneMatch {
+		noneMatch[i] = types.StringValue(c)
+	}
+	return &GlobMatcher{
+		AnyMatch:  anyMatch,
+		NoneMatch: noneMatch,
+	}
 }
 
 type ShieldLocation string
@@ -81,6 +168,36 @@ const (
 type CacheKeyModel struct {
 	Headers []types.String `tfsdk:"headers"`
 	Cookies []types.String `tfsdk:"cookies"`
+}
+
+func (c *CacheKeyModel) transformToDto() *client.CacheKeyDto {
+	var cacheKeyHeaders = make([]string, len(c.Headers))
+	var cacheKeyCookies = make([]string, len(c.Cookies))
+	for i, h := range c.Headers {
+		cacheKeyHeaders[i] = h.ValueString()
+	}
+	for i, c := range c.Cookies {
+		cacheKeyCookies[i] = c.ValueString()
+	}
+	return &client.CacheKeyDto{
+		Header: cacheKeyHeaders,
+		Cookie: cacheKeyCookies,
+	}
+}
+
+func trasformCacheKeyModelToResourceModel(c *client.CacheKeyDto) *CacheKeyModel {
+	var cacheKeyHeaders = make([]types.String, len(c.Header))
+	var cacheKeyCookies = make([]types.String, len(c.Cookie))
+	for i, h := range c.Header {
+		cacheKeyHeaders[i] = types.StringValue(h)
+	}
+	for i, c := range c.Cookie {
+		cacheKeyCookies[i] = types.StringValue(c)
+	}
+	return &CacheKeyModel{
+		Headers: cacheKeyHeaders,
+		Cookies: cacheKeyCookies,
+	}
 }
 
 type BasicAuthModel struct {
@@ -383,20 +500,9 @@ func (m *MTEConfigResource) Update(ctx context.Context, req resource.UpdateReque
 }
 
 func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto {
-	var httpRoutes = make([]client.RoutesDto, len(m.Config.Routes))
+	var httpRoutes = make([]client.RouteDto, len(m.Config.Routes))
 	for i, r := range m.Config.Routes {
-
-		var routesPostBody = client.RoutesDto{
-			Host:               r.Host.ValueString(),
-			Path:               r.Path.ValueString(),
-			EnableSsl:          r.EnableSsl.ValueBool(),
-			PreservePathPrefix: r.PreservePathPrefix.ValueBool(),
-			ShieldLocation:     client.ShieldLocation(r.ShieldLocation.ValueString()),
-		}
-		if r.AppendPathPrefix.ValueString() != "" {
-			routesPostBody.AppendPathPrefix = r.AppendPathPrefix.ValueString()
-		}
-		httpRoutes[i] = routesPostBody
+		httpRoutes[i] = r.transformToDto()
 	}
 	dto := client.MTEConfigDto{
 		Routes: httpRoutes,
@@ -409,40 +515,8 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 	}
 	if m.Config.Cache != nil {
 		var httpCache = make([]client.CacheDto, len(m.Config.Cache))
-
-		for i, r := range m.Config.Cache {
-			var cacheBody = client.CacheDto{
-				TtlSeconds: r.TtlSeconds.ValueInt64Pointer(),
-			}
-			if r.Keys != nil {
-				var cacheKeyHeaders = make([]string, len(r.Keys.Headers))
-				var cacheKeyCookies = make([]string, len(r.Keys.Cookies))
-				for i, h := range r.Keys.Headers {
-					cacheKeyHeaders[i] = h.ValueString()
-				}
-				for i, c := range r.Keys.Cookies {
-					cacheKeyCookies[i] = c.ValueString()
-				}
-				cacheBody.Keys = &client.CacheKeyDto{
-					Header: cacheKeyHeaders,
-					Cookie: cacheKeyCookies,
-				}
-			}
-			if r.PathRules != nil {
-				var anyMatch = make([]string, len(r.PathRules.AnyMatch))
-				var noneMatch = make([]string, len(r.PathRules.NoneMatch))
-				for i, h := range r.PathRules.AnyMatch {
-					anyMatch[i] = h.ValueString()
-				}
-				for i, c := range r.PathRules.NoneMatch {
-					noneMatch[i] = c.ValueString()
-				}
-				cacheBody.PathRules = &client.MatcherDto{
-					AnyMatch:  anyMatch,
-					NoneMatch: noneMatch,
-				}
-			}
-			httpCache[i] = cacheBody
+		for i, c := range m.Config.Cache {
+			httpCache[i] = c.transformToDto()
 		}
 		dto.Cache = httpCache
 	}
@@ -452,20 +526,7 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 	var routeModels = make([]RouteModel, len(d.Routes))
 	for i, r := range d.Routes {
-		var routesPostBody = RouteModel{
-			Host:               types.StringValue(r.Host),
-			Path:               types.StringValue(r.Path),
-			EnableSsl:          types.BoolValue(r.EnableSsl),
-			PreservePathPrefix: types.BoolValue(r.PreservePathPrefix),
-		}
-		if r.ShieldLocation != "" {
-			routesPostBody.ShieldLocation = types.StringValue(string(r.ShieldLocation))
-		}
-		if r.AppendPathPrefix != "" {
-			routesPostBody.AppendPathPrefix = types.StringValue(r.AppendPathPrefix)
-		}
-
-		routeModels[i] = routesPostBody
+		routeModels[i] = transformRouteToResourceModel(&r)
 	}
 
 	model := MTEConfigModel{
@@ -477,44 +538,10 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 			Password: types.StringValue(d.BasicAuth.Password),
 		}
 	}
-
 	if d.Cache != nil {
 		var cacheModels = make([]CacheModel, len(d.Cache))
 		for i, c := range d.Cache {
-			var cacheModel = CacheModel{}
-			if c.TtlSeconds != nil {
-				cacheModel.TtlSeconds = types.Int64Value(*c.TtlSeconds)
-			}
-			if c.Keys != nil {
-				var cacheKeyHeaders = make([]types.String, len(c.Keys.Header))
-				var cacheKeyCookies = make([]types.String, len(c.Keys.Cookie))
-				for i, h := range c.Keys.Header {
-					cacheKeyHeaders[i] = types.StringValue(h)
-				}
-				for i, c := range c.Keys.Cookie {
-					cacheKeyCookies[i] = types.StringValue(c)
-				}
-				cacheModel.Keys = &CacheKeyModel{
-					Headers: cacheKeyHeaders,
-					Cookies: cacheKeyCookies,
-				}
-			}
-			if c.PathRules != nil {
-				var anyMatch = make([]types.String, len(c.PathRules.AnyMatch))
-				var noneMatch = make([]types.String, len(c.PathRules.NoneMatch))
-				for i, h := range c.PathRules.AnyMatch {
-					anyMatch[i] = types.StringValue(h)
-				}
-				for i, c := range c.PathRules.NoneMatch {
-					noneMatch[i] = types.StringValue(c)
-				}
-				cacheModel.PathRules = &GlobMatcher{
-					AnyMatch:  anyMatch,
-					NoneMatch: noneMatch,
-				}
-			}
-
-			cacheModels[i] = cacheModel
+			cacheModels[i] = trasformCacheModelToResourceModel(&c)
 		}
 		model.Cache = cacheModels
 	}
