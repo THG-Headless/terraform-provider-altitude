@@ -15,7 +15,7 @@ func (c *Client) DeleteMTEConfig(
 ) error {
 	httpRes, err := c.initiateRequest(
 		http.MethodDelete,
-		fmt.Sprintf("/v1/environment/%s/mte/altitude-config", input.EnvironmentId),
+		fmt.Sprintf("/v2/environment/%s/mte/altitude-config", input.EnvironmentId),
 		nil)
 
 	if err != nil {
