@@ -357,6 +357,10 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 								"no_match_value": schema.StringAttribute{
 									Required:            true,
 									MarkdownDescription: "The value of the new header created if no match was found.",
+								},
+							},
+						},
+					},
 					"cache": schema.ListNestedAttribute{
 						Optional:            true,
 						MarkdownDescription: "A list of settings designed to manipulate your cache without requiring you to set response headers.",
@@ -404,7 +408,6 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 					},
 				},
 			},
-		},
 			"environment_id": schema.StringAttribute{
 				Required: true,
 				MarkdownDescription: "The environment ID which this config associates with. If this value changes, this will " +
@@ -563,6 +566,9 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			condHeadersModels[i] = condHeader
 		}
 		dto.ConditionalHeaders = condHeadersModels
+	}
+
+
 	if m.Config.Cache != nil {
 		var httpCache = make([]client.CacheDto, len(m.Config.Cache))
 		for i, c := range m.Config.Cache {
