@@ -214,6 +214,28 @@ type ConditionalHeaderModel struct {
 	NoMatchValue   types.String `tfsdk:"no_match_value"`
 }
 
+func (c *ConditionalHeaderModel) transformToDto() client.ConditionalHeaderDto {
+	var condHeadPostBody = client.ConditionalHeaderDto{
+		MatchingHeader: c.MatchingHeader.ValueString(),
+		Pattern:        c.Pattern.ValueString(),
+		NewHeader:      c.NewHeader.ValueString(),
+		MatchValue:     c.MatchValue.ValueString(),
+		NoMatchValue:   c.NoMatchValue.ValueString(),
+	}
+	return condHeadPostBody
+}
+
+func transformCondHeaderToResourceModel(c *client.ConditionalHeaderDto) ConditionalHeaderModel {
+	var condHeaderResourceModel = ConditionalHeaderModel{
+		MatchingHeader: types.StringValue(c.MatchingHeader),
+		Pattern:        types.StringValue(c.Pattern),
+		NewHeader:      types.StringValue(c.NewHeader),
+		MatchValue:     types.StringValue(c.MatchValue),
+		NoMatchValue:   types.StringValue(c.NoMatchValue),
+	}
+	return condHeaderResourceModel
+}
+
 // Metadata implements resource.Resource.
 func (m *MTEConfigResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_mte_config"
@@ -555,15 +577,7 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 	if len(m.Config.ConditionalHeaders) != 0 {
 		var condHeadersModels = make([]client.ConditionalHeaderDto, len(m.Config.ConditionalHeaders))
 		for i, c := range m.Config.ConditionalHeaders {
-
-			var condHeader = client.ConditionalHeaderDto{
-				MatchingHeader: c.MatchingHeader.ValueString(),
-				Pattern:        c.Pattern.ValueString(),
-				NewHeader:      c.NewHeader.ValueString(),
-				MatchValue:     c.MatchValue.ValueString(),
-				NoMatchValue:   c.NoMatchValue.ValueString(),
-			}
-			condHeadersModels[i] = condHeader
+			condHeadersModels[i] = c.transformToDto()
 		}
 		dto.ConditionalHeaders = condHeadersModels
 	}
@@ -602,17 +616,9 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 	}
 
 	if len(d.ConditionalHeaders) != 0 {
-
 		var condHeadersModels = make([]ConditionalHeaderModel, len(d.ConditionalHeaders))
 		for i, c := range d.ConditionalHeaders {
-			var condHeader = ConditionalHeaderModel{
-				MatchingHeader: types.StringValue(c.MatchingHeader),
-				Pattern:        types.StringValue(c.Pattern),
-				NewHeader:      types.StringValue(c.NewHeader),
-				MatchValue:     types.StringValue(c.MatchValue),
-				NoMatchValue:   types.StringValue(c.NoMatchValue),
-			}
-			condHeadersModels[i] = condHeader
+			condHeadersModels[i] = transformCondHeaderToResourceModel(&c)
 		}
 		model.ConditionalHeaders = condHeadersModels
 	}
