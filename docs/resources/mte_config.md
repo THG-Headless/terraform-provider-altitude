@@ -70,8 +70,8 @@ Required:
 Optional:
 
 - `basic_auth` (Attributes) (see [below for nested schema](#nestedatt--config--basic_auth))
-- `conditional_headers` (Attributes List) (see [below for nested schema](#nestedatt--config--conditional_headers))
 - `cache` (Attributes List) A list of settings designed to manipulate your cache without requiring you to set response headers. (see [below for nested schema](#nestedatt--config--cache))
+- `conditional_headers` (Attributes List) (see [below for nested schema](#nestedatt--config--conditional_headers))
 
 <a id="nestedatt--config--routes"></a>
 ### Nested Schema for `config.routes`
@@ -98,16 +98,6 @@ Required:
 - `username` (String) The username which clients will enter to authorize viewing this environment.
 
 
-<a id="nestedatt--config--conditional_headers"></a>
-### Nested Schema for `config.conditional_headers`
-
-Required:
-
-- `match_value` (String) The value of the new header created if a match was found. Capture groups are supported, but specifying a capture group thats out of bounds will return an empty string. eg $3 where there are only two capture groups will be replaced with ''
-- `matching_header` (String) The header who's value will be checked for a match.
-- `new_header` (String) The new header created to hold the match or no match values.
-- `no_match_value` (String) The value of the new header created if no match was found.
-- `pattern` (String) A regex pattern used to check the value of a given header for a match. The regex must cover the whole header value. Capture groups are supported
 <a id="nestedatt--config--cache"></a>
 ### Nested Schema for `config.cache`
 
@@ -133,3 +123,16 @@ Required:
 
 - `any_match` (List of String) A list of glob paths where one of the list needs to match for the cache settings to be activated for a path. If both this field and `none_match` are specified, both need to be successful for the path to match.
 - `none_match` (List of String) A list of glob paths where all of the list needs to not match the path for the cache settings to be activated. If both this field and `any_match` are specified, both need to be successful for the path to match.
+
+
+
+<a id="nestedatt--config--conditional_headers"></a>
+### Nested Schema for `config.conditional_headers`
+
+Required:
+
+- `match_value` (String) The value of the new header created if a match was found. Capture groups are supported, but specifying a capture group thats out of bounds will return an empty string. eg $3 where there are only two capture groups will be replaced with ''
+- `matching_header` (String) The header who's value will be checked for a match.
+- `new_header` (String) The new header created to hold the match or no match values.
+- `no_match_value` (String) The value of the new header created if no match was found.
+- `pattern` (String) A regex pattern used to check the value of a given header for a match. The regex must cover the whole header value. Capture groups are supported
