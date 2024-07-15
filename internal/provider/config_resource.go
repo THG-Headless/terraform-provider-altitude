@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -36,17 +37,114 @@ type MTEConfigModel struct {
 	Routes             []RouteModel             `tfsdk:"routes"`
 	BasicAuth          *BasicAuthModel          `tfsdk:"basic_auth"`
 	ConditionalHeaders []ConditionalHeaderModel `tfsdk:"conditional_headers"`
+	Cache     []CacheModel    `tfsdk:"cache"`
 }
 
 type RouteModel struct {
-	Host               types.String   `tfsdk:"host"`
-	Path               types.String   `tfsdk:"path"`
-	EnableSsl          types.Bool     `tfsdk:"enable_ssl"`
-	PreservePathPrefix types.Bool     `tfsdk:"preserve_path_prefix"`
-	CacheKey           *CacheKeyModel `tfsdk:"cache_key"`
-	AppendPathPrefix   types.String   `tfsdk:"append_path_prefix"`
-	ShieldLocation     types.String   `tfsdk:"shield_location"`
-	CacheMaxAge        types.Int64    `tfsdk:"cache_max_age"`
+	Host               types.String `tfsdk:"host"`
+	Path               types.String `tfsdk:"path"`
+	EnableSsl          types.Bool   `tfsdk:"enable_ssl"`
+	PreservePathPrefix types.Bool   `tfsdk:"preserve_path_prefix"`
+	AppendPathPrefix   types.String `tfsdk:"append_path_prefix"`
+	ShieldLocation     types.String `tfsdk:"shield_location"`
+}
+
+func (r *RouteModel) transformToDto() client.RouteDto {
+	var routesPostBody = client.RouteDto{
+		Host:               r.Host.ValueString(),
+		Path:               r.Path.ValueString(),
+		EnableSsl:          r.EnableSsl.ValueBool(),
+		PreservePathPrefix: r.PreservePathPrefix.ValueBool(),
+		ShieldLocation:     client.ShieldLocation(r.ShieldLocation.ValueString()),
+	}
+	if r.AppendPathPrefix.ValueString() != "" {
+		routesPostBody.AppendPathPrefix = r.AppendPathPrefix.ValueString()
+	}
+	return routesPostBody
+}
+
+func transformRouteToResourceModel(r *client.RouteDto) RouteModel {
+	var routesPostBody = RouteModel{
+		Host:               types.StringValue(r.Host),
+		Path:               types.StringValue(r.Path),
+		EnableSsl:          types.BoolValue(r.EnableSsl),
+		PreservePathPrefix: types.BoolValue(r.PreservePathPrefix),
+	}
+	if r.ShieldLocation != "" {
+		routesPostBody.ShieldLocation = types.StringValue(string(r.ShieldLocation))
+	}
+	if r.AppendPathPrefix != "" {
+		routesPostBody.AppendPathPrefix = types.StringValue(r.AppendPathPrefix)
+	}
+	return routesPostBody
+}
+
+type CacheModel struct {
+	Keys       *CacheKeyModel `tfsdk:"keys"`
+	TtlSeconds types.Int64    `tfsdk:"ttl_seconds"`
+	PathRules  *GlobMatcher   `tfsdk:"path_rules"`
+}
+
+func (c *CacheModel) transformToDto() client.CacheDto {
+	var cacheBody = client.CacheDto{
+		TtlSeconds: c.TtlSeconds.ValueInt64Pointer(),
+	}
+	if c.Keys != nil {
+		cacheBody.Keys = c.Keys.transformToDto()
+	}
+	if c.PathRules != nil {
+		cacheBody.PathRules = c.PathRules.transformToDto()
+	}
+	return cacheBody
+}
+
+func trasformCacheModelToResourceModel(c *client.CacheDto) CacheModel {
+	var cacheModel = CacheModel{}
+	if c.TtlSeconds != nil {
+		cacheModel.TtlSeconds = types.Int64Value(*c.TtlSeconds)
+	}
+	if c.Keys != nil {
+		cacheModel.Keys = trasformCacheKeyModelToResourceModel(c.Keys)
+	}
+	if c.PathRules != nil {
+		cacheModel.PathRules = trasformMatcherToResourceModel(c.PathRules)
+	}
+	return cacheModel
+}
+
+type GlobMatcher struct {
+	AnyMatch  []types.String `tfsdk:"any_match"`
+	NoneMatch []types.String `tfsdk:"none_match"`
+}
+
+func (m *GlobMatcher) transformToDto() *client.MatcherDto {
+	var anyMatch = make([]string, len(m.AnyMatch))
+	var noneMatch = make([]string, len(m.NoneMatch))
+	for i, h := range m.AnyMatch {
+		anyMatch[i] = h.ValueString()
+	}
+	for i, c := range m.NoneMatch {
+		noneMatch[i] = c.ValueString()
+	}
+	return &client.MatcherDto{
+		AnyMatch:  anyMatch,
+		NoneMatch: noneMatch,
+	}
+}
+
+func trasformMatcherToResourceModel(m *client.MatcherDto) *GlobMatcher {
+	var anyMatch = make([]types.String, len(m.AnyMatch))
+	var noneMatch = make([]types.String, len(m.NoneMatch))
+	for i, h := range m.AnyMatch {
+		anyMatch[i] = types.StringValue(h)
+	}
+	for i, c := range m.NoneMatch {
+		noneMatch[i] = types.StringValue(c)
+	}
+	return &GlobMatcher{
+		AnyMatch:  anyMatch,
+		NoneMatch: noneMatch,
+	}
 }
 
 type ShieldLocation string
@@ -71,6 +169,36 @@ const (
 type CacheKeyModel struct {
 	Headers []types.String `tfsdk:"headers"`
 	Cookies []types.String `tfsdk:"cookies"`
+}
+
+func (c *CacheKeyModel) transformToDto() *client.CacheKeyDto {
+	var cacheKeyHeaders = make([]string, len(c.Headers))
+	var cacheKeyCookies = make([]string, len(c.Cookies))
+	for i, h := range c.Headers {
+		cacheKeyHeaders[i] = h.ValueString()
+	}
+	for i, c := range c.Cookies {
+		cacheKeyCookies[i] = c.ValueString()
+	}
+	return &client.CacheKeyDto{
+		Header: cacheKeyHeaders,
+		Cookie: cacheKeyCookies,
+	}
+}
+
+func trasformCacheKeyModelToResourceModel(c *client.CacheKeyDto) *CacheKeyModel {
+	var cacheKeyHeaders = make([]types.String, len(c.Header))
+	var cacheKeyCookies = make([]types.String, len(c.Cookie))
+	for i, h := range c.Header {
+		cacheKeyHeaders[i] = types.StringValue(h)
+	}
+	for i, c := range c.Cookie {
+		cacheKeyCookies[i] = types.StringValue(c)
+	}
+	return &CacheKeyModel{
+		Headers: cacheKeyHeaders,
+		Cookies: cacheKeyCookies,
+	}
 }
 
 type BasicAuthModel struct {
@@ -108,6 +236,28 @@ func (m *MTEConfigResource) Configure(ctx context.Context, req resource.Configur
 	m.client = resourceData.client
 }
 
+func (m *MTEConfigResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data MTEConfigResourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if data.Config.Cache != nil {
+		for _, c := range data.Config.Cache {
+			if c.Keys == nil && c.TtlSeconds == basetypes.NewInt64Null() {
+				resp.Diagnostics.AddAttributeError(
+					path.Root("cache"),
+					"Missing Attribute Configuration",
+					"Expected either `keys` or `ttl_seconds` to be set inside the cache object.",
+				)
+			}
+		}
+	}
+}
+
 // Schema implements resource.Resource.
 func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
@@ -139,30 +289,9 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 										"For example, if this was `true` and the path defined was `/foo`, when a client directs to `/foo/123` we would route " +
 										"to the host with the path set as `/foo/123`. If it was `false`, we would point to `/123`.",
 								},
-								"cache_key": schema.SingleNestedAttribute{
-									Optional: true,
-									Attributes: map[string]schema.Attribute{
-										"headers": schema.ListAttribute{
-											ElementType:         types.StringType,
-											Required:            true,
-											MarkdownDescription: "A list of header names of which the cache key will differeniate upon the values of these headers.",
-										},
-										"cookies": schema.ListAttribute{
-											ElementType:         types.StringType,
-											Required:            true,
-											MarkdownDescription: "A list of cookie names which the cache key will differeniate upon the values of these cookies.",
-										},
-									},
-									MarkdownDescription: "An object specifying header and cookie names which should be added to the cache key. The result " +
-										"of this would lead to separate cache hits for requests with different values of the header or cookie.",
-								},
 								"append_path_prefix": schema.StringAttribute{
 									Optional:            true,
 									MarkdownDescription: "A string which will be appended to the start of the path sent to the host.",
-								},
-								"cache_max_age": schema.Int64Attribute{
-									Optional:            true,
-									MarkdownDescription: "An int that will be used to specify the time that the response of the route should be stored in the cache, in seconds.",
 								},
 								"shield_location": schema.StringAttribute{
 									Optional: true,
@@ -228,12 +357,54 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 								"no_match_value": schema.StringAttribute{
 									Required:            true,
 									MarkdownDescription: "The value of the new header created if no match was found.",
+					"cache": schema.ListNestedAttribute{
+						Optional:            true,
+						MarkdownDescription: "A list of settings designed to manipulate your cache without requiring you to set response headers.",
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"path_rules": schema.SingleNestedAttribute{
+									Optional:            true,
+									MarkdownDescription: "A set of glob rules which identify when the cache settings should be activated.",
+									Attributes: map[string]schema.Attribute{
+										"any_match": schema.ListAttribute{
+											ElementType:         types.StringType,
+											Required:            true,
+											MarkdownDescription: "A list of glob paths where one of the list needs to match for the cache settings to be activated for a path. If both this field and `none_match` are specified, both need to be successful for the path to match.",
+										},
+										"none_match": schema.ListAttribute{
+											ElementType:         types.StringType,
+											Required:            true,
+											MarkdownDescription: "A list of glob paths where all of the list needs to not match the path for the cache settings to be activated. If both this field and `any_match` are specified, both need to be successful for the path to match.",
+										},
+									},
+								},
+								"keys": schema.SingleNestedAttribute{
+									Optional: true,
+									Attributes: map[string]schema.Attribute{
+										"headers": schema.ListAttribute{
+											ElementType:         types.StringType,
+											Required:            true,
+											MarkdownDescription: "A list of header names of which the cache key will differeniate upon the values of these headers.",
+										},
+										"cookies": schema.ListAttribute{
+											ElementType:         types.StringType,
+											Required:            true,
+											MarkdownDescription: "A list of cookie names which the cache key will differeniate upon the values of these cookies.",
+										},
+									},
+									MarkdownDescription: "An object specifying header and cookie names which should be added to the cache key. The result " +
+										"of this would lead to separate cache hits for requests with different values of the header or cookie. One of this",
+								},
+								"ttl_seconds": schema.Int64Attribute{
+									Optional:            true,
+									MarkdownDescription: "An integer that will be used to specify the time that the response of the route should be stored in the cache, in seconds.",
 								},
 							},
 						},
 					},
 				},
 			},
+		},
 			"environment_id": schema.StringAttribute{
 				Required: true,
 				MarkdownDescription: "The environment ID which this config associates with. If this value changes, this will " +
@@ -364,39 +535,10 @@ func (m *MTEConfigResource) Update(ctx context.Context, req resource.UpdateReque
 }
 
 func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto {
-	var httpRoutes = make([]client.RoutesDto, len(m.Config.Routes))
+	var httpRoutes = make([]client.RouteDto, len(m.Config.Routes))
 	for i, r := range m.Config.Routes {
-
-		var routesPostBody = client.RoutesDto{
-			Host:               r.Host.ValueString(),
-			Path:               r.Path.ValueString(),
-			EnableSsl:          r.EnableSsl.ValueBool(),
-			PreservePathPrefix: r.PreservePathPrefix.ValueBool(),
-			ShieldLocation:     client.ShieldLocation(r.ShieldLocation.ValueString()),
-			CacheMaxAge:        r.CacheMaxAge.ValueInt64Pointer(),
-		}
-		if r.AppendPathPrefix.ValueString() != "" {
-			routesPostBody.AppendPathPrefix = r.AppendPathPrefix.ValueString()
-		}
-
-		if r.CacheKey != nil {
-			var cacheKeyHeaders = make([]string, len(r.CacheKey.Headers))
-			var cacheKeyCookies = make([]string, len(r.CacheKey.Cookies))
-			for i, h := range r.CacheKey.Headers {
-				cacheKeyHeaders[i] = h.ValueString()
-			}
-			for i, c := range r.CacheKey.Cookies {
-				cacheKeyCookies[i] = c.ValueString()
-			}
-			routesPostBody.CacheKey = &client.CacheKeyDto{
-				Header: cacheKeyHeaders,
-				Cookie: cacheKeyCookies,
-			}
-		}
-
-		httpRoutes[i] = routesPostBody
+		httpRoutes[i] = r.transformToDto()
 	}
-
 	dto := client.MTEConfigDto{
 		Routes: httpRoutes,
 	}
@@ -421,6 +563,12 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			condHeadersModels[i] = condHeader
 		}
 		dto.ConditionalHeaders = condHeadersModels
+	if m.Config.Cache != nil {
+		var httpCache = make([]client.CacheDto, len(m.Config.Cache))
+		for i, c := range m.Config.Cache {
+			httpCache[i] = c.transformToDto()
+		}
+		dto.Cache = httpCache
 	}
 	return dto
 }
@@ -428,41 +576,7 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 	var routeModels = make([]RouteModel, len(d.Routes))
 	for i, r := range d.Routes {
-
-		var routesPostBody = RouteModel{
-			Host:               types.StringValue(r.Host),
-			Path:               types.StringValue(r.Path),
-			EnableSsl:          types.BoolValue(r.EnableSsl),
-			PreservePathPrefix: types.BoolValue(r.PreservePathPrefix),
-		}
-		if r.CacheKey != nil {
-			var cacheKeyHeaders = make([]types.String, len(r.CacheKey.Header))
-			var cacheKeyCookies = make([]types.String, len(r.CacheKey.Cookie))
-			for i, h := range r.CacheKey.Header {
-				cacheKeyHeaders[i] = types.StringValue(h)
-			}
-			for i, c := range r.CacheKey.Cookie {
-				cacheKeyCookies[i] = types.StringValue(c)
-			}
-			routesPostBody.CacheKey = &CacheKeyModel{
-				Headers: cacheKeyHeaders,
-				Cookies: cacheKeyCookies,
-			}
-		}
-
-		if r.ShieldLocation != "" {
-			routesPostBody.ShieldLocation = types.StringValue(string(r.ShieldLocation))
-		}
-
-		if r.CacheMaxAge != nil {
-			routesPostBody.CacheMaxAge = types.Int64Value(*r.CacheMaxAge)
-		}
-
-		if r.AppendPathPrefix != "" {
-			routesPostBody.AppendPathPrefix = types.StringValue(r.AppendPathPrefix)
-		}
-
-		routeModels[i] = routesPostBody
+		routeModels[i] = transformRouteToResourceModel(&r)
 	}
 
 	model := MTEConfigModel{
@@ -473,6 +587,13 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 			Username: types.StringValue(d.BasicAuth.Username),
 			Password: types.StringValue(d.BasicAuth.Password),
 		}
+	}
+	if d.Cache != nil {
+		var cacheModels = make([]CacheModel, len(d.Cache))
+		for i, c := range d.Cache {
+			cacheModels[i] = trasformCacheModelToResourceModel(&c)
+		}
+		model.Cache = cacheModels
 	}
 
 	if len(d.ConditionalHeaders) != 0 {

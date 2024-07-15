@@ -22,7 +22,20 @@ resource "altitude_mte_config" "config" {
         enable_ssl           = true
         preserve_path_prefix = true
         shield_location      = "London"
-        cache_max_age        = 360
+      }
+    ]
+    cache = [
+      {
+        path_rules = {
+          any_match = [
+            "/foo**"
+          ]
+        }
+        keys = {
+          headers = ["X-Header"]
+          cookies = ["X-Cookie"]
+        }
+        ttl_seconds = 100
       }
     ]
     conditional_headers = [
@@ -58,6 +71,7 @@ Optional:
 
 - `basic_auth` (Attributes) (see [below for nested schema](#nestedatt--config--basic_auth))
 - `conditional_headers` (Attributes List) (see [below for nested schema](#nestedatt--config--conditional_headers))
+- `cache` (Attributes List) A list of settings designed to manipulate your cache without requiring you to set response headers. (see [below for nested schema](#nestedatt--config--cache))
 
 <a id="nestedatt--config--routes"></a>
 ### Nested Schema for `config.routes`
@@ -72,18 +86,7 @@ Required:
 Optional:
 
 - `append_path_prefix` (String) A string which will be appended to the start of the path sent to the host.
-- `cache_key` (Attributes) An object specifying header and cookie names which should be added to the cache key. The result of this would lead to separate cache hits for requests with different values of the header or cookie. (see [below for nested schema](#nestedatt--config--routes--cache_key))
-- `cache_max_age` (Number) An int that will be used to specify the time that the response of the route should be stored in the cache, in seconds.
 - `shield_location` (String) This describes the location which all requests will be forwarded to before reaching the origin of this route.
-
-<a id="nestedatt--config--routes--cache_key"></a>
-### Nested Schema for `config.routes.cache_key`
-
-Required:
-
-- `cookies` (List of String) A list of cookie names which the cache key will differeniate upon the values of these cookies.
-- `headers` (List of String) A list of header names of which the cache key will differeniate upon the values of these headers.
-
 
 
 <a id="nestedatt--config--basic_auth"></a>
@@ -105,3 +108,28 @@ Required:
 - `new_header` (String) The new header created to hold the match or no match values.
 - `no_match_value` (String) The value of the new header created if no match was found.
 - `pattern` (String) A regex pattern used to check the value of a given header for a match. The regex must cover the whole header value. Capture groups are supported
+<a id="nestedatt--config--cache"></a>
+### Nested Schema for `config.cache`
+
+Optional:
+
+- `keys` (Attributes) An object specifying header and cookie names which should be added to the cache key. The result of this would lead to separate cache hits for requests with different values of the header or cookie. One of this (see [below for nested schema](#nestedatt--config--cache--keys))
+- `path_rules` (Attributes) A set of glob rules which identify when the cache settings should be activated. (see [below for nested schema](#nestedatt--config--cache--path_rules))
+- `ttl_seconds` (Number) An integer that will be used to specify the time that the response of the route should be stored in the cache, in seconds.
+
+<a id="nestedatt--config--cache--keys"></a>
+### Nested Schema for `config.cache.keys`
+
+Required:
+
+- `cookies` (List of String) A list of cookie names which the cache key will differeniate upon the values of these cookies.
+- `headers` (List of String) A list of header names of which the cache key will differeniate upon the values of these headers.
+
+
+<a id="nestedatt--config--cache--path_rules"></a>
+### Nested Schema for `config.cache.path_rules`
+
+Required:
+
+- `any_match` (List of String) A list of glob paths where one of the list needs to match for the cache settings to be activated for a path. If both this field and `none_match` are specified, both need to be successful for the path to match.
+- `none_match` (List of String) A list of glob paths where all of the list needs to not match the path for the cache settings to be activated. If both this field and `any_match` are specified, both need to be successful for the path to match.

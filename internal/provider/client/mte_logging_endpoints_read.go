@@ -7,28 +7,16 @@ import (
 	"net/http"
 )
 
-type ReadMTEConfigInput struct {
-	EnvironmentId string
-}
-
-func (c *Client) ReadMTEConfig(
-	input ReadMTEConfigInput,
-) (*MTEConfigDto, error) {
+func (c *Client) ReadMTELoggingEndpoints() (*MTELoggingEndpointsDto, error) {
 	httpRes, err := c.initiateRequest(
 		http.MethodGet,
-		fmt.Sprintf("/v2/environment/%s/mte/altitude-config", input.EnvironmentId),
+		"/v1/admin/logging",
 		nil)
 
 	if err != nil {
 		return nil, &AltitudeClientError{
 			shortMessage: "HTTP Error",
 			detail:       fmt.Sprintf("There has been an error with the http request, received error: %s", err),
-		}
-	}
-	if httpRes.StatusCode == 404 {
-		return nil, &AltitudeClientError{
-			shortMessage: "Environment ID not found",
-			detail:       fmt.Sprintf("The Environment %s does not have associated config.", input.EnvironmentId),
 		}
 	}
 
@@ -43,6 +31,7 @@ func (c *Client) ReadMTEConfig(
 
 	defer httpRes.Body.Close()
 	body, err := io.ReadAll(httpRes.Body)
+
 	if err != nil {
 		return nil, &AltitudeClientError{
 			shortMessage: "Body Read Error",
@@ -50,13 +39,13 @@ func (c *Client) ReadMTEConfig(
 		}
 	}
 
-	var dto MTEConfigDto
+	var dto MTELoggingEndpointsDto
 	err = json.Unmarshal(body, &dto)
 
 	if err != nil {
 		return nil, &AltitudeClientError{
 			shortMessage: "Body Read Error",
-			detail:       "Unable to parse JSON body from Altitude response",
+			detail:       "Unable to parse JSON body from Altitude response: " + string(body),
 		}
 	}
 

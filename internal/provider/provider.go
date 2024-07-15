@@ -179,7 +179,9 @@ func (p *altitudeProvider) Resources(ctx context.Context) []func() resource.Reso
 }
 
 func (p *altitudeProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		NewLoggingEndpointsDataSource,
+	}
 }
 
 func (p *altitudeProvider) Functions(ctx context.Context) []func() function.Function {

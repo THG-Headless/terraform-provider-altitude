@@ -26,7 +26,7 @@ func (c *Client) CreateMTEConfig(
 
 	httpRes, err := c.initiateRequest(
 		http.MethodPost,
-		fmt.Sprintf("/v1/environment/%s/mte/altitude-config", input.EnvironmentId),
+		fmt.Sprintf("/v2/environment/%s/mte/altitude-config", input.EnvironmentId),
 		bytes.NewBuffer(jsonBody))
 
 	if err != nil {
