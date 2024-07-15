@@ -157,7 +157,6 @@ func TestAccConfigWithConditionalHeadersCreateUpdateDelete(t *testing.T) {
 	})
 }
 
-
 func testAccKVResource(fileResource string, environmentId string, host string) string {
 	b, err := os.ReadFile(fileResource)
 	if err != nil {

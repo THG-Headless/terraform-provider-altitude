@@ -37,7 +37,7 @@ type MTEConfigModel struct {
 	Routes             []RouteModel             `tfsdk:"routes"`
 	BasicAuth          *BasicAuthModel          `tfsdk:"basic_auth"`
 	ConditionalHeaders []ConditionalHeaderModel `tfsdk:"conditional_headers"`
-	Cache     []CacheModel    `tfsdk:"cache"`
+	Cache              []CacheModel             `tfsdk:"cache"`
 }
 
 type RouteModel struct {
@@ -341,7 +341,7 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 									MarkdownDescription: "The header who's value will be checked for a match.",
 								},
 								"pattern": schema.StringAttribute{
-									Required:            true,
+									Required: true,
 									MarkdownDescription: "A regex pattern used to check the value of a given header for a match. The regex must cover the whole header value. " +
 										"Capture groups are supported",
 								},
@@ -350,7 +350,7 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 									MarkdownDescription: "The new header created to hold the match or no match values.",
 								},
 								"match_value": schema.StringAttribute{
-									Required:            true,
+									Required: true,
 									MarkdownDescription: "The value of the new header created if a match was found. Capture groups are supported, but specifying a capture group thats out of " +
 										"bounds will return an empty string. eg $3 where there are only two capture groups will be replaced with ''",
 								},
@@ -567,7 +567,6 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 		}
 		dto.ConditionalHeaders = condHeadersModels
 	}
-
 
 	if m.Config.Cache != nil {
 		var httpCache = make([]client.CacheDto, len(m.Config.Cache))
