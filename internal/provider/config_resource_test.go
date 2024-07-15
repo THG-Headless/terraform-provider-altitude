@@ -165,5 +165,3 @@ func testAccKVResource(fileResource string, environmentId string, host string) s
 	str := string(b)
 	return fmt.Sprintf(str, host, environmentId)
 }
-
-
