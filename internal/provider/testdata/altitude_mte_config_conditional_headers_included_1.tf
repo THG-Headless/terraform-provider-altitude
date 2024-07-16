@@ -11,7 +11,7 @@ resource "altitude_mte_config" "cond-header-test" {
 		]
 		conditional_headers = [
 			{
-				matching_header = "header2"
+				matching_header = "testHeader"
 				pattern         = ".*123.*"
 				new_header      = "testNewHeader"
 				match_value     = "foo"
