@@ -146,7 +146,7 @@ func TestAccConfigWithConditionalHeadersCreateUpdateDelete(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVResource("testdata/altitude_mte_configconditional_headers_excluded.tf", env_id, host),
+				Config: testAccKVResource("testdata/altitude_mte_config_conditional_headers_excluded.tf", env_id, host),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckNoResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers"),
 					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.routes.0.host", host),
