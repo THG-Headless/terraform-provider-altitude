@@ -1,14 +1,23 @@
 package client
 
 type MTEConfigDto struct {
-	Routes    []RouteDto    `json:"routes"`
-	BasicAuth *BasicAuthDto `json:"basicAuth,omitempty"`
-	Cache     []CacheDto    `json:"cache,omitempty"`
+	Routes             []RouteDto             `json:"routes"`
+	BasicAuth          *BasicAuthDto          `json:"basicAuth,omitempty"`
+	Cache              []CacheDto             `json:"cache,omitempty"`
+	ConditionalHeaders []ConditionalHeaderDto `json:"conditionalHeaders,omitempty"`
 }
 
 type BasicAuthDto struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type ConditionalHeaderDto struct {
+	MatchingHeader string `json:"matchingHeader"`
+	Pattern        string `json:"pattern"`
+	NewHeader      string `json:"newHeader"`
+	MatchValue     string `json:"matchValue"`
+	NoMatchValue   string `json:"noMatchValue"`
 }
 
 type RouteDto struct {

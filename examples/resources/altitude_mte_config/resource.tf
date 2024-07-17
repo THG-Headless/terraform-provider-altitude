@@ -23,6 +23,15 @@ resource "altitude_mte_config" "config" {
         ttl_seconds = 100
       }
     ]
+    conditional_headers = [
+      {
+        matching_header = "foo"
+        pattern         = ".*pattern(.*)"
+        new_header      = "bar"
+        match_value     = "match"
+        no_match_value  = "no match"
+      }
+    ]
   }
   environment_id = "test"
 }

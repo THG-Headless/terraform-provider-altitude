@@ -116,6 +116,47 @@ func TestAccConfigWithCacheResource(t *testing.T) {
 	})
 }
 
+func TestAccConfigWithConditionalHeadersCreateUpdateDelete(t *testing.T) {
+	var matching_header = "testHeader"
+	var pattern = ".*123.*"
+	var new_header = "testNewHeader"
+	var match_value = "foo"
+	var no_match_value = "bar"
+	var updated_matching_header = "header2"
+	var env_id = randomString(10)
+	var host = "www.thgaltitude.com"
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccKVResource("testdata/altitude_mte_config_conditional_headers_included_1.tf", env_id, host),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers.0.matching_header", matching_header),
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers.0.pattern", pattern),
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers.0.new_header", new_header),
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers.0.match_value", match_value),
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers.0.no_match_value", no_match_value),
+				),
+			},
+			{
+				Config: testAccKVResource("testdata/altitude_mte_config_conditional_headers_included_2.tf", env_id, host),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers.0.matching_header", updated_matching_header),
+				),
+			},
+			{
+				Config: testAccKVResource("testdata/altitude_mte_config_conditional_headers_excluded.tf", env_id, host),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr("altitude_mte_config.cond-header-test", "config.conditional_headers"),
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "config.routes.0.host", host),
+					resource.TestCheckResourceAttr("altitude_mte_config.cond-header-test", "environment_id", env_id),
+				),
+			},
+		},
+	})
+}
+
 func testAccKVResource(fileResource string, environmentId string, host string) string {
 	b, err := os.ReadFile(fileResource)
 	if err != nil {

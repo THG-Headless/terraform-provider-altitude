@@ -34,9 +34,10 @@ type MTEConfigResourceModel struct {
 }
 
 type MTEConfigModel struct {
-	Routes    []RouteModel    `tfsdk:"routes"`
-	BasicAuth *BasicAuthModel `tfsdk:"basic_auth"`
-	Cache     []CacheModel    `tfsdk:"cache"`
+	Routes             []RouteModel             `tfsdk:"routes"`
+	BasicAuth          *BasicAuthModel          `tfsdk:"basic_auth"`
+	ConditionalHeaders []ConditionalHeaderModel `tfsdk:"conditional_headers"`
+	Cache              []CacheModel             `tfsdk:"cache"`
 }
 
 type RouteModel struct {
@@ -205,6 +206,36 @@ type BasicAuthModel struct {
 	Password types.String `tfsdk:"password"`
 }
 
+type ConditionalHeaderModel struct {
+	MatchingHeader types.String `tfsdk:"matching_header"`
+	Pattern        types.String `tfsdk:"pattern"`
+	NewHeader      types.String `tfsdk:"new_header"`
+	MatchValue     types.String `tfsdk:"match_value"`
+	NoMatchValue   types.String `tfsdk:"no_match_value"`
+}
+
+func (c *ConditionalHeaderModel) transformToDto() client.ConditionalHeaderDto {
+	var condHeadPostBody = client.ConditionalHeaderDto{
+		MatchingHeader: c.MatchingHeader.ValueString(),
+		Pattern:        c.Pattern.ValueString(),
+		NewHeader:      c.NewHeader.ValueString(),
+		MatchValue:     c.MatchValue.ValueString(),
+		NoMatchValue:   c.NoMatchValue.ValueString(),
+	}
+	return condHeadPostBody
+}
+
+func transformCondHeaderToResourceModel(c *client.ConditionalHeaderDto) ConditionalHeaderModel {
+	var condHeaderResourceModel = ConditionalHeaderModel{
+		MatchingHeader: types.StringValue(c.MatchingHeader),
+		Pattern:        types.StringValue(c.Pattern),
+		NewHeader:      types.StringValue(c.NewHeader),
+		MatchValue:     types.StringValue(c.MatchValue),
+		NoMatchValue:   types.StringValue(c.NoMatchValue),
+	}
+	return condHeaderResourceModel
+}
+
 // Metadata implements resource.Resource.
 func (m *MTEConfigResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_mte_config"
@@ -320,6 +351,35 @@ func (m *MTEConfigResource) Schema(ctx context.Context, req resource.SchemaReque
 							"password": schema.StringAttribute{
 								Required:            true,
 								MarkdownDescription: "The password which clients will enter to authorize viewing this environment.",
+							},
+						},
+					},
+					"conditional_headers": schema.ListNestedAttribute{
+						Optional: true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"matching_header": schema.StringAttribute{
+									Required:            true,
+									MarkdownDescription: "The header who's value will be checked for a match.",
+								},
+								"pattern": schema.StringAttribute{
+									Required: true,
+									MarkdownDescription: "A regex pattern used to check the value of a given header for a match. The regex must cover the whole header value. " +
+										"Capture groups are supported",
+								},
+								"new_header": schema.StringAttribute{
+									Required:            true,
+									MarkdownDescription: "The new header created to hold the match or no match values.",
+								},
+								"match_value": schema.StringAttribute{
+									Required: true,
+									MarkdownDescription: "The value of the new header created if a match was found. Capture groups are supported, but specifying a capture group thats out of " +
+										"bounds will return an empty string. eg $3 where there are only two capture groups will be replaced with ''",
+								},
+								"no_match_value": schema.StringAttribute{
+									Required:            true,
+									MarkdownDescription: "The value of the new header created if no match was found.",
+								},
 							},
 						},
 					},
@@ -513,6 +573,15 @@ func (m *MTEConfigResourceModel) transformToApiRequestBody() client.MTEConfigDto
 			Password: m.Config.BasicAuth.Password.ValueString(),
 		}
 	}
+
+	if len(m.Config.ConditionalHeaders) != 0 {
+		var condHeadersModels = make([]client.ConditionalHeaderDto, len(m.Config.ConditionalHeaders))
+		for i, c := range m.Config.ConditionalHeaders {
+			condHeadersModels[i] = c.transformToDto()
+		}
+		dto.ConditionalHeaders = condHeadersModels
+	}
+
 	if m.Config.Cache != nil {
 		var httpCache = make([]client.CacheDto, len(m.Config.Cache))
 		for i, c := range m.Config.Cache {
@@ -544,6 +613,14 @@ func transformToResourceModel(d *client.MTEConfigDto) MTEConfigModel {
 			cacheModels[i] = trasformCacheModelToResourceModel(&c)
 		}
 		model.Cache = cacheModels
+	}
+
+	if len(d.ConditionalHeaders) != 0 {
+		var condHeadersModels = make([]ConditionalHeaderModel, len(d.ConditionalHeaders))
+		for i, c := range d.ConditionalHeaders {
+			condHeadersModels[i] = transformCondHeaderToResourceModel(&c)
+		}
+		model.ConditionalHeaders = condHeadersModels
 	}
 
 	return model
